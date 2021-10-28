@@ -27,7 +27,7 @@ In this workshop, we introduce you to R and RStudio at the beginner level. In it
 
 We will do all of our work in [RStudio](https://www.rstudio.com/). RStudio is an integrated development and analysis environment for R that brings a number of conveniences over using R in a terminal or other editing environments.
 
-During the workshop, we will build an R script together, which will be posted as 'live_notes' after the workshop [here](TBD).
+During the workshop, we will build an R script together, which will be posted as 'live_notes' after the workshop [here](https://github.com/BIGslu/workshops/tree/main/2021.10.28_introR.workshop/notes).
 
 # Prior to the workshop
 Please [install R](http://www.r-project.org) and [RStudio](https://www.rstudio.com/products/rstudio/download/). See the [setup instructions](notes/introR_setup.html) for more details.
