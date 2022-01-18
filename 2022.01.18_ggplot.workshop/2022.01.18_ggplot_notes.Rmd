@@ -1,0 +1,103 @@
+---
+title: "Customizing ggplot"
+author: "Kim Dill-McFarland, kadm@uw.edu"
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+---
+```{r include=FALSE}
+knitr::opts_chunk$set(fig.width = 8.5, fig.height = 3.5)
+```
+
+# Overview
+In this workshop, we explore some options to customize ggplot. This document contains the base workflow but please see the [live.notes](TBD) for additional functions in response to attendee questions.
+
+# Prior to the workshop
+
+Please install [R](http://www.r-project.org), [RStudio](https://www.rstudio.com/products/rstudio/download/), and the following packages.
+
+```{r message=FALSE, warning=FALSE}
+#Data manipulation
+#install.packages("tidyverse")
+library(tidyverse)
+#Example data
+#install.packages("devtools")
+#devtools::install_github("BIGslu/kimma")
+library(kimma)
+```
+
+# Load data
+
+Briefly, these data are from RNA-sequencing of human dendritic cells cultured with and without virus. Samples are from 3 donors and a random subset of 1000 genes were selected. Expression data are in an limma EList object (named `example.voom`) containing expression (`E`), sample/patient metadata (`targets`), and gene metadata (`genes`). Expression is expressed as TMM-normalized log2 counts per million (CPM).
+
+We combine the expression, sample, and gene metadata in a single table for use in plotting.
+
+```{r message=FALSE}
+dat <- as.data.frame(example.voom$E) %>% 
+  rownames_to_column("geneName") %>% 
+  pivot_longer(-geneName, names_to = "libID") %>% 
+  inner_join(example.voom$targets, by = "libID") %>% 
+  inner_join(example.voom$genes, by = "geneName")
+
+dat
+```
+
+Additionally, we load table with GSEA results for these data. See the `example_gsea.R` script for the code to run GSEA.
+
+```{r}
+gsea <- read_csv("data/example_gsea.csv", show_col_types = FALSE)
+class(gsea)
+gsea
+```
+
+# Plots
+## Boxplot
+
+```{r}
+dat %>% 
+  filter(hgnc_symbol == "IFIT3") %>% 
+  
+  ggplot(aes(x = virus, y = value)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter()
+```
+
+## Barplot
+
+```{r}
+dat %>% 
+  filter(hgnc_symbol == "IFIT3") %>% 
+  
+  ggplot(aes(x = donorID, y = value)) +
+  geom_bar(aes(fill = virus), stat = "identity", position = 'dodge')
+```
+
+## "Lollipop" plot
+
+```{r}
+gsea %>% 
+  filter(padj < 0.3) %>% 
+  mutate(Significance = ifelse(padj < 0.2, "FDR < 0.2", "NS")) %>% 
+  
+  ggplot() +
+  geom_segment(aes(x=pathway, xend=pathway, y=0, yend=NES)) +
+  geom_point(aes(x=pathway, y=NES, color = Significance)) +
+  geom_hline(yintercept = 0) +
+  coord_flip()
+```
+
+# R session
+
+```{r}
+sessionInfo()
+```
+
+***
