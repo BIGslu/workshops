@@ -18,7 +18,7 @@ knitr::opts_chunk$set(fig.width = 8.5, fig.height = 3.5)
 ```
 
 # Overview
-In this workshop, we explore some options to customize ggplot. This document contains the base workflow but please see the [live.notes](TBD) for additional functions in response to attendee questions.
+In this workshop, we explore some options to customize ggplot. This document contains the basic plot to start and then addtional plots with modifications in response to attendee questions.
 
 # Prior to the workshop
 
@@ -70,6 +70,62 @@ dat %>%
   geom_jitter()
 ```
 
+Only show some points
+
+```{r}
+dat %>% 
+  filter(hgnc_symbol == "IFIT3") %>% 
+  
+  ggplot(aes(x = virus, y = value)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter(data=filter(dat, 
+                          hgnc_symbol == "IFIT3" & donorID=="donor1")) +
+  #theme_classic() +
+  theme_bw()
+```
+
+See `ggthemes` for more
+
+Save to file
+
+```{r}
+plot1 <- dat %>% 
+  filter(hgnc_symbol == "IFIT3") %>% 
+  
+  ggplot(aes(x = virus, y = value)) +
+  geom_boxplot(outlier.shape = NA) +
+  geom_jitter()
+
+ggsave(filename = "plot1.png", plot1,
+       width=3, height=3)
+```
+
+Width of boxplot relative to sample size.
+
+```{r}
+dat %>% 
+  filter(hgnc_symbol == "IFIT3") %>% 
+  arrange(virus) %>% 
+  slice_head(n=9) %>% 
+  
+  ggplot(aes(x = virus, y = value)) +
+  geom_boxplot(varwidth = TRUE,
+               outlier.shape = NA) +
+  geom_jitter()
+```
+
+Violin version with scale to sample size
+
+```{r}
+dat %>% 
+  filter(hgnc_symbol == "IFIT3") %>% 
+  arrange(virus) %>% 
+  slice_head(n=9) %>% 
+  
+  ggplot(aes(x = virus, y = value)) +
+  geom_violin(scale = "count")
+```
+
 ## Barplot
 
 ```{r}
@@ -77,7 +133,43 @@ dat %>%
   filter(hgnc_symbol == "IFIT3") %>% 
   
   ggplot(aes(x = donorID, y = value)) +
-  geom_bar(aes(fill = virus), stat = "identity", position = 'dodge')
+  geom_bar(aes(fill = virus), stat = "identity",
+           position = 'dodge')
+```
+
+Stacked bars
+
+```{r}
+dat %>% 
+  filter(hgnc_symbol == "IFIT3") %>% 
+  
+  ggplot(aes(x = donorID, y = value)) +
+  geom_bar(aes(fill = virus), stat = "identity")
+```
+
+```{r}
+dat %>% 
+  filter(hgnc_symbol == "IFIT3") %>% 
+  
+  ggplot(aes(x = donorID, y = value)) +
+  geom_bar(aes(fill = virus), stat = "identity",
+           position = 'dodge') +
+  scale_fill_manual(values = c('HRV'='black',
+                               'none'='grey60'))
+```
+
+Color ideas at <https://colorbrewer2.org/>
+
+Plot mean with error
+
+```{r}
+dat %>% 
+  filter(hgnc_symbol == "IFIT3") %>% 
+  
+  ggplot(aes(x = virus, y = value)) +
+  geom_bar(aes(fill = virus), 
+           stat = "summary", fun = "mean") +
+  stat_summary(fun.data="mean_sdl")
 ```
 
 ## "Lollipop" plot
@@ -88,10 +180,64 @@ gsea %>%
   mutate(Significance = ifelse(padj < 0.2, "FDR < 0.2", "NS")) %>% 
   
   ggplot() +
-  geom_segment(aes(x=pathway, xend=pathway, y=0, yend=NES)) +
-  geom_point(aes(x=pathway, y=NES, color = Significance)) +
+  geom_segment(aes(x=pathway, xend=pathway, 
+                   y=0, yend=NES)) +
+  geom_point(aes(x=pathway, y=NES,
+                 color = Significance)) +
   geom_hline(yintercept = 0) +
   coord_flip()
+```
+
+Sort
+
+```{r}
+gsea %>% 
+  filter(padj < 0.3) %>% 
+  mutate(Significance = ifelse(padj < 0.2, "FDR < 0.2", "NS")) %>% 
+  
+  ggplot() +
+  geom_segment(aes(y=pathway, yend=pathway, 
+                   x=0, xend=NES)) +
+  geom_point(aes(y=pathway, x=NES,
+                 color = Significance)) +
+  geom_vline(xintercept = 0)
+```
+
+Reorder by NES
+
+```{r}
+gsea %>% 
+  filter(padj < 0.3) %>% 
+  mutate(Significance = ifelse(padj < 0.2, "FDR < 0.2", "NS")) %>% 
+  
+  ggplot() +
+  geom_segment(aes(y=reorder(pathway,NES), yend=reorder(pathway,NES), 
+                   x=0, xend=NES)) +
+  geom_point(aes(y=reorder(pathway,NES), x=NES,
+                 color = Significance)) +
+  geom_vline(xintercept = 0)
+```
+
+```{r}
+gsea %>% 
+  filter(padj < 0.3) %>% 
+  mutate(Significance = ifelse(padj < 0.2, "FDR < 0.2", "NS")) %>% 
+  
+  ggplot() +
+  geom_segment(aes(y=reorder(pathway,NES),
+                   yend=reorder(pathway,NES), 
+                   x=0, xend=NES), size=1) +
+  geom_point(aes(y=reorder(pathway,NES), x=NES,
+                 color = Significance), size=2) +
+  geom_vline(xintercept = 0, lty="dashed") +
+  theme_bw() +
+  theme(legend.position = c(0.1,0.9),
+        legend.direction = "vertical",
+        plot.title = element_text(hjust = 0.5),
+        legend.justification = "left") +
+  labs(x="Normalized enrichment score",
+       y="", title="Hallmark pathways") +
+  lims(x=c(-2.1,2.1))
 ```
 
 # R session
