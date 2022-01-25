@@ -4,6 +4,8 @@
 # https://github.com/BIGslu/workshops/tree/main/introR.workshop
 # https://youtu.be/pCotIcLfet4
 ############
+# Style guide
+# https://style.tidyverse.org/
 
 # Comments start with a #
 # line 2 if you need one
