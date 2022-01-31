@@ -2,7 +2,7 @@
 # Introduction to R
 # 2022.01.25
 # https://github.com/BIGslu/workshops/tree/main/introR.workshop
-# https://youtu.be/pCotIcLfet4
+# https://youtu.be/v8sszf7Ej-Y
 ############
 # Style guide
 # https://style.tidyverse.org/
