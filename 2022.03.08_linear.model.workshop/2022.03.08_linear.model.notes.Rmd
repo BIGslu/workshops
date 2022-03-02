@@ -1,0 +1,19 @@
+---
+title: "Linear modeling in R"
+author: "Kim Dill-McFarland, kadm@uw.edu"
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+---
+```{r include=FALSE}
+knitr::opts_chunk$set(fig.width = 8.5, fig.height = 3.5)
+```
+
