@@ -3,17 +3,330 @@ title: "Linear modeling in R"
 author: "Kim Dill-McFarland, kadm@uw.edu"
 date: "version `r format(Sys.time(), '%B %d, %Y')`"
 output:
+  pdf_document:
+    toc: yes
   html_document:
     toc: yes
     toc_float:
       collapsed: no
-  pdf_document:
-    toc: yes
 editor_options:
   chunk_output_type: console
 urlcolor: blue
 ---
 ```{r include=FALSE}
-knitr::opts_chunk$set(fig.width = 8.5, fig.height = 3.5)
+knitr::opts_chunk$set(fig.width = 4, fig.height = 3.5)
 ```
 
+# Overview
+In this workshop, we introduce linear modeling in R from a t-test to ANOVA to simple regression to mixed effects models. We also touch on tools for large modeling projects such as RNA-seq differential expression.
+
+# Prior to the workshop
+
+Please install [R](http://www.r-project.org), [RStudio](https://www.rstudio.com/products/rstudio/download/), and the following packages.
+
+```{r message=FALSE, warning=FALSE}
+#Data manipulation
+#install.packages("tidyverse")
+#install.packages("lme4")
+library(tidyverse)
+library(broom)
+library(lme4)
+library(car)
+#Example data
+#install.packages("devtools")
+#devtools::install_github("BIGslu/kimma")
+library(kimma)
+```
+
+# Load data
+
+Briefly, these data are from RNA-sequencing of human dendritic cells cultured with and without virus. Samples are from 3 donors and a random subset of 1000 genes were selected. Expression data are in an limma EList object (named `example.voom`) containing expression (`E`), sample/patient metadata (`targets`), and gene metadata (`genes`). Expression is expressed as TMM-normalized log2 counts per million (CPM).
+
+We combine the expression, sample, and gene metadata for 1 gene in a single table for use in modeling.
+
+```{r message=FALSE}
+dat <- as.data.frame(example.voom$E) %>% 
+  rownames_to_column("geneName") %>% 
+  pivot_longer(-geneName, names_to = "libID") %>% 
+  inner_join(example.voom$targets, by = "libID") %>% 
+  inner_join(example.voom$genes, by = "geneName") %>% 
+  filter(hgnc_symbol == "ZNF439")
+
+dat
+```
+
+# Introduction
+## Experimental design
+
+We do not have time to extensively cover all that should go into experimental design *prior* to statistical modeling. However, some key aspects to consider are:
+
+* Balance: balanced designs have roughly equal observations for each group.
+* Randomization: subjects should be randomized to groups to help balance any unknown or unmeasured variables in the experiment. Randomization should support a balanced design as well.
+* Blocking / repeated measures: when dealing with multiple observations from the same subject (like over time or pre/post treatment), this should be taken into account in models. Moreover, this type of design can add a lot of power to your analyses as it "cancels out" much of the subject-to-subject variation not usually of interest in your experiment. 
+* Assumptions: all statistical tests make assumptions about your data. You need to consider what test you're using and if your data fulfill these assumptions. We'll see this in practice later.
+
+## Writing formulae
+
+In R, formulae are written in the form `y ~ x` where the `~` functions like an `=` in what you'd traditionally see written in text like `y = x`. In the models we explore here, you will only have 1 `y` variable. However, you may have more than 1 `x` variable, and these are added to the model like `y ~ x1 + x2 ...`. You may also have interaction terms in a model such as the impact of `x1` within `x2` groups. This is written with a `:` as in `y ~ x1 + x2 + x1:x2` or the shorthand `*` which stands for all individual variables and all interactions. This would be `y ~ x1 * x2` which is equivalent to `y ~ x1 + x2 + x1:x2`.
+
+Formulae are a specific type of R object. Similar to other types, you can check if what you have is of this type with `class( )`.
+
+```{r}
+class(y ~ x)
+```
+
+Importantly, this does not check that this is the most correct model for your data. It merely let's you know that you've formatted the syntax correctly for R to recognize a formula.
+
+# Simple linear regression
+## t-test
+
+Under the hood, a t-test is simply a special case of a simple linear regression where there is only 1 categorical `x` variable with exactly 2 levels to predict 1 numeric `y` variable.
+
+Here, we run a t-test of gene expression `value` in control `none` vs virus `HRV` infected samples for our gene of interest. We see that gene expression does not significantly change with viral infection (P = 0.22).
+
+```{r ttest}
+TT <- t.test(formula = value ~ virus, data = dat)
+TT
+```
+
+## ANOVA
+
+Similarly, analysis of variance (ANOVA) is another special case of simple linear regression. In this case, it is when there are 1 or more categorical `x` variables with 2 or more levels to predict 1 numeric `y` variable.
+
+So, we could run the same model as in our t-test and get the same result. Notice that the `aov` function does not automatically estimate the P-value. So, we use another function to extract that in a data frame.
+
+```{r aov}
+AV <- aov(formula = value ~ virus, data = dat)
+AV
+tidy(AV)
+```
+
+In future, you may see other functions to extract p-values such as `summary( )`. These work here as well; I just like the `broom` package's `tidy` function as it puts results in a data frame with consistent column names. However, `tidy` does not work on all model types.
+
+Now, let's move beyond 1 `x` variable. If we were to add another variable to our t-test, it will not run since it no longer fulfills the special case of 1 `x` variable.
+
+```{r error=TRUE}
+t.test(formula = value ~ virus + asthma, data = dat)
+```
+
+So, we must use an ANOVA. We see that gene expression does not change significantly with either virus or asthma. Note that the p-value for virus is slightly different that the first model `value ~ virus` because adding variables impacts degrees of freedom for **all** variables in the model.
+
+```{r}
+AV <- aov(formula = value ~ virus + asthma, data = dat)
+AV
+tidy(AV)
+```
+
+## Linear regression
+
+We continue to generalize our model to the heart of both t-tests and ANOVA. Linear regression is the most general version of these tests and can be used for any number of `x` variables of any type (numeric, categorical).
+
+We see that our last ANOVA model gave the same results as the `lm` model.
+
+```{r lm}
+LM <- lm(formula = value ~ virus + asthma, data = dat)
+LM
+tidy(LM)
+```
+
+### Where did (Intercept) come from?
+
+You may have noticed that we appear to have gained a variable with linear regression. This is the intercept of the fit line. In the case of categorical variables such as here, this variable is not meaningful. However, if you had a numeric `x` variable, you may wish to know what the estimated value of `y` is at `x` = 0 and if this significantly differs from (0,0). This variable does not appear for `t.test` or `aov` because they only work for categorical `x`.
+
+### t-test or ANOVA or linear regression?
+
+In practice in R, you never have to make this decision. You can simply use `lm( )` and it will take care of the cases where your data fit a t-test or ANOVA. You'll get the same result regardless of the function.
+
+## Assumptions
+
+Linear modeling makes a number of assumptions about your data. You can see a more complete list [here](https://en.wikipedia.org/wiki/Linear_regression#Assumptions) but the assumptions of importance for these data are:
+
+- Samples are balanced
+- The variance of `y` is roughly equal in all groups (homoscedasticity)
+- Samples are independent
+
+Let's check each of these. We'll use functions in the [tidyverse](https://www.tidyverse.org/) here. To learn more about working with data in the tidyverse, see [previous workshops](https://github.com/hawn-lab/workshops_UW_Seattle/tree/master/2021.06.21_IntroR)
+
+#### Balance
+
+All groups are balanced with 6 observations per group.
+
+```{r}
+dat %>% count(virus)
+dat %>% count(asthma)
+```
+
+#### Variance
+
+Variance of the `y` variable are roughly equal. To be considered unequal, you'd expect differences in order of magnitude like 1 vs 10.
+
+```{r}
+dat %>% group_by(virus) %>% summarise(variance = var(value))
+dat %>% group_by(asthma) %>% summarise(variance = var(value))
+```
+
+#### Independence
+
+By design, our samples are not independent because we have a control and virus sample from each donor. Thus, this assumption of linear regression is broken and the results above are not valid.
+
+```{r}
+dat %>% count(donorID)
+```
+
+# Linear mixed effects regression
+
+But never fear! We can account for our paired sample design in our model. To do this, we move away from simple linear regression into mixed effects regression. This term refers to the use of both fixed effects (`x`) and random effects (have not seen yet) in one model.
+
+To add a random effect, you use the syntax `(across | within)` such as expression across time within each donor `(time | donor)`. If you don't have an across variable (usually time), you fill in a 1 as a placeholder such as `(1 | donor)`. The syntax for random effects in a model can vary in different R packages. Here, we are using the `lme4` package and its associated syntax. If you use another package in future, be sure to check its syntax! 
+
+Thus, our model of interest is as follows. Notes that like `aov` and `lm`, `lmer` does not automatically give p-values. We must estimate them separately.
+
+```{r lme}
+LME <- lmer(formula = value ~ virus + asthma + (1 | donorID), data = dat)
+LME
+tidy(car::Anova(LME))
+```
+
+## The power of paired sample design
+
+What a change!! The p-value for virus is less than half what is was when we didn't include a random effect. This represents a fundamental difference in simple linear vs mixed effects regression.
+
+In simple regression, you are comparing **means** with error. In our model, this is comparing the two red square values (which is equivalent to 1 slope), keeping the overlap of error bars in mind. As is clear in the plot, the means are not very different and error bars overlap a lot between the two virus groups. Thus, our p-value is large.
+
+```{r}
+ggplot(dat, aes(x=virus, y=value)) +
+  #individual data points
+  geom_jitter(width=0.1, height=0) +
+  #error bars
+  stat_summary(fun.data=mean_sdl, fun.args = list(mult=1), 
+        geom="errorbar", color="red", width=0.2) +
+  #mean
+  stat_summary(fun=mean, geom="point", color="red", shape="square", size=3) +
+  theme_classic() +
+  labs(y="Log2 normalized expression")
+```
+
+Note that `jitter` randomly distributes the dots along the width. Therefore, you're plot will not look exactly the same along x but the y-values will be consistent.
+
+In contrast, incorporating donor as a random effect in a mixed effects model allows up to pair the appropriate samples and instead compare multiple **slopes**. In a sense, it corrects for the initial variation between donors and looks for a consistent **change** in expression instead of a difference in means. Here, we see that most donors have decreased expression with virus, thus driving a lower p-value.
+
+```{r}
+ggplot(dat, aes(x=virus, y=value)) +
+  #individual data points
+  geom_point() +
+  #connect points
+   geom_line(aes(group=donorID)) +
+  theme_classic() +
+  labs(y="Log2 normalized expression")
+```
+
+# Scaling up
+
+We initially reduced this RNA-seq data set to 1 gene. In reality, we want to model expression of all genes, which is `r nrow(example.voom)` models! There are a number of R packages that help us achieve this in less time and with a lot less code that repeating what we've done previously.
+
+## limma linear regression
+
+The [limma](https://academic.oup.com/nar/article/43/7/e47/2414268) package is wicked fast and great for simple linear regression. Syntax is a little different than what we've used previously. For the sake of time, an analysis of these data is summarized below.
+
+```{r limma1}
+# Make model matrix. This is limma's version of a formula
+mm <- model.matrix(~ virus + asthma, data = example.voom$targets)
+# Fit linear regression. Similar to lm( )
+fit <- lmFit(object = example.voom$E, design = mm)
+# Estimate p-values. Similar to tidy( ) or Anova( )
+efit <- eBayes(fit)
+# Get results in a data frame
+fdr <- extract_lmFit(design = mm, fit = efit)
+```
+
+The results contain all genes (1000) and all variables (3) = 3000 rows.
+
+```{r}
+nrow(fdr)
+```
+
+## limma pseudo mixed effects regression
+
+limma provides a shortcut to account for random effects by treating paired samples as replicates and incorporating a variable to account for the average correlation of expression between "replicates". This is not a full mixed effects model but it can account for some of the random effect.
+
+```{r limma2}
+# Make model matrix
+mm <- model.matrix(~ virus + asthma, data = example.voom$targets)
+# Estimate correlation of gene expression in paired (block) samples
+dupCor <- duplicateCorrelation(object = example.voom$E,
+                                 design = mm,
+                                 block = example.voom$targets$donorID)
+# Fit linear regression
+fit2 <- lmFit(object = example.voom$E, design = mm,
+                          block=example.voom$targets$donorID,
+                          correlation=dupCor$consensus.correlation)
+# Estimate p-values
+efit2 <- eBayes(fit2)
+# Get results in a data frame
+fdr2 <- extract_lmFit(design = mm, fit = efit2)
+```
+
+## kimma mixed effects regression
+
+[kimma](https://github.com/BIGslu/kimma) is an under-development package to run true linear mixed effects models on RNA-seq data. Under the hood, it uses `lmer( )` to fit models as we did earlier for the 1 gene.  
+
+```{r kimma}
+fit3 <- kmFit(dat = example.voom, patientID = "donorID",
+              model = "~ virus + asthma + (1|donorID)", 
+              run.lme = TRUE)
+fdr3 <- fit3$lme
+```
+
+## Compare limma and kimma
+
+```{r}
+#List 5 genes most signif for virus
+top.genes <- fdr %>% 
+  filter(variable == "virusHRV") %>% 
+  top_n(5, -adj.P.Val) %>% 
+  distinct(geneName) %>% unlist(use.names = FALSE)
+
+#Combine and format limma results
+fdr.limma <- fdr %>% 
+  mutate(group = "limma LM") %>% 
+  bind_rows(mutate(fdr2, group="limma LME")) %>% 
+  filter(geneName %in% top.genes & variable == "virusHRV") %>% 
+  select(group, geneName, adj.P.Val) %>% 
+  rename(gene=geneName, FDR=adj.P.Val)
+
+#Add kimma results
+fdr3 %>% 
+  mutate(group = "kimma LME") %>% 
+  filter(gene %in% top.genes & variable == "virus") %>% 
+  select(group, gene, FDR) %>% 
+  bind_rows(fdr.limma) %>% 
+  mutate(group = factor(group, levels=c("limma LM", "limma LME", "kimma LME")),
+         FDR = formatC(FDR, digits=2)) %>% 
+  arrange(group) %>% 
+  pivot_wider(names_from = group, values_from = FDR)
+```
+
+Looking at the top 5 most significant genes by limma simple linear regression, we can see that both limma's pseudo mixed effect and kimma's true mixed effect result in changes in FDR. While all of these genes would be classified as differentially expression genes (DEG) at FDR < 0.01, difference in the model can greatly impact DEG lists when effects are not as pronounced as viral infection or there is more inter-individual variation. Thus, as always, it's important to use a model appropriate to your data.
+
+# Resources
+
+* The tidyverse
+  - <https://github.com/hawn-lab/workshops_UW_Seattle/tree/master/2021.06.21_IntroR>
+  - <https://educe-ubc.github.io/workshops/introduction-to-the-tidyverse-1.html>
+* Linear modeling in R
+  - <https://educe-ubc.github.io/workshops/statistical-models-in-r-1.html>
+* RNA-seq data analysis
+  - <https://github.com/BIGslu/tutorials/tree/main/RNAseq>
+* limma
+  - Chapter 15 <https://www.bioconductor.org/packages/devel/bioc/vignettes/limma/inst/doc/usersguide.pdf>
+  - <https://ucdavis-bioinformatics-training.github.io/2018-June-RNA-Seq-Workshop/thursday/DE.html>
+* kimma
+  - <https://github.com/BIGslu/tutorials/blob/main/RNAseq/3.Hawn_RNAseq_voom.to.DEG.pdf>
+
+# R session
+
+```{r}
+sessionInfo()
+```
+
+***
