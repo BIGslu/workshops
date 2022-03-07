@@ -15,6 +15,7 @@ urlcolor: blue
 ---
 ```{r include=FALSE}
 knitr::opts_chunk$set(fig.width = 4, fig.height = 3.5)
+library(patchwork)
 ```
 
 # Overview
@@ -208,16 +209,27 @@ ggplot(dat, aes(x=virus, y=value)) +
 
 Note that `jitter` randomly distributes the dots along the width. Therefore, you're plot will not look exactly the same along x but the y-values will be consistent.
 
-In contrast, incorporating donor as a random effect in a mixed effects model allows up to pair the appropriate samples and instead compare multiple **slopes**. In a sense, it corrects for the initial variation between donors and looks for a consistent **change** in expression instead of a difference in means. Here, we see that most donors have decreased expression with virus, thus driving a lower p-value.
+In contrast, incorporating donor as a random effect in a mixed effects model allows up to pair the appropriate samples and instead compare multiple **slopes**. In a sense, it corrects for the initial variation between donors and looks for a consistent **change** in expression instead of a difference in means. On the left, we see the real data where most (but not all) donors have decreased expression with virus, thus driving a lower p-value but not significant. If, instead, all donors showed a consistent trend, such as the fake example on the right, we would have seen an even smaller, significant p-value.
 
-```{r}
-ggplot(dat, aes(x=virus, y=value)) +
+```{r fig.width=8}
+p1 <- ggplot(dat, aes(x=virus, y=value)) +
   #individual data points
   geom_point() +
   #connect points
    geom_line(aes(group=donorID)) +
   theme_classic() +
-  labs(y="Log2 normalized expression")
+  labs(y="Log2 normalized expression", title="Real paired donors")
+p2 <- dat %>% 
+  arrange(virus, value) %>% 
+  mutate(group = c(1:6,1:6)) %>% 
+  ggplot(aes(x=virus, y=value)) +
+  #individual data points
+  geom_point() +
+  #connect points
+   geom_line(aes(group=group)) +
+  theme_classic() +
+  labs(y="Log2 normalized expression", title="Fake paired donors")
+p1+p2
 ```
 
 # Scaling up
