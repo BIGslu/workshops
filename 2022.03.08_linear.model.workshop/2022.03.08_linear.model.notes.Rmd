@@ -21,21 +21,26 @@ library(patchwork)
 # Overview
 In this workshop, we introduce linear modeling in R from a t-test to ANOVA to simple regression to mixed effects models. We also touch on tools for large modeling projects such as RNA-seq differential expression.
 
+Video at <https://youtu.be/UGtgeRPmc6I>
+
 # Prior to the workshop
 
 Please install [R](http://www.r-project.org), [RStudio](https://www.rstudio.com/products/rstudio/download/), and the following packages.
 
 ```{r message=FALSE, warning=FALSE}
-#Data manipulation
-#install.packages("tidyverse")
-#install.packages("lme4")
+#Install (once per computer)
+# install.packages(c("tidyverse", "lme4", "car",
+#                    "BiocManager","devtools"))
+# BiocManager::install(c("limma","variancePartition))
+# devtools::install_github("BIGslu/kimma")
+
+#Load (every time you open a new R/RStudio session)
 library(tidyverse)
 library(broom)
 library(lme4)
 library(car)
-#Example data
-#install.packages("devtools")
-#devtools::install_github("BIGslu/kimma")
+library(limma)
+library(variancePartition) #dream
 library(kimma)
 ```
 
@@ -130,9 +135,39 @@ LM
 tidy(LM)
 ```
 
+### Reference levels
+
+All of our models thus far have compared categorical groups to a reference level. R assumes the reference is the first level alphabetically unless you code a factor to tell it otherwise. For example, `asthma` assumes the reference is "asthma" and then compares the other level, "healthy", to this reference. Hence why are see asthmahealthy in the model results.
+
+```{r}
+sort(unique(dat$asthma))
+```
+
+In contrast, `virus` is a factor with levels forcing the reference to be "none" even though it is alphabetically after "HRV".
+
+```{r}
+sort(unique(dat$virus))
+```
+
+You could achieve this for the `asthma` variable re-coding it as a factor.
+
+```{r}
+dat <- dat %>% mutate(asthma.fct = factor(asthma, levels = c("healthy", "asthma")))
+
+tidy(lm(formula = value ~ virus + asthma.fct, data = dat))
+```
+
 ### Where did (Intercept) come from?
 
 You may have noticed that we appear to have gained a variable with linear regression. This is the intercept of the fit line. In the case of categorical variables such as here, this variable is not meaningful. However, if you had a numeric `x` variable, you may wish to know what the estimated value of `y` is at `x` = 0 and if this significantly differs from (0,0). This variable does not appear for `t.test` or `aov` because they only work for categorical `x`.
+
+You can remove the intercept from a linear model by starting with `0` such as below. However, even when the intercept isn't meaningful to your interpretation, this might not be what you want to do. In this case, removing the intercept means we have two results for `virus`, each asking if gene expression of that virus group is different from 0. We don't want this and instead, want the original model asking if none and HRV infected differ.
+
+```{r}
+LM2 <- lm(formula = value ~ 0 + virus + asthma, data = dat)
+LM2
+tidy(LM2)
+```
 
 ### t-test or ANOVA or linear regression?
 
@@ -259,7 +294,7 @@ nrow(fdr)
 
 ## limma pseudo mixed effects regression
 
-limma provides a shortcut to account for random effects by treating paired samples as replicates and incorporating a variable to account for the average correlation of expression between "replicates". This is not a full mixed effects model but it can account for some of the random effect.
+limma provides a shortcut to account for random effects by treating paired samples as pseudo replicates. It uses a single random effect estimate for all genes from a given donor based on correlation of expression between these "replicates". This is not a full mixed effects model but it can account for some of the random effect.
 
 ```{r limma2}
 # Make model matrix
@@ -278,18 +313,32 @@ efit2 <- eBayes(fit2)
 fdr2 <- extract_lmFit(design = mm, fit = efit2)
 ```
 
-## kimma mixed effects regression
+## dream mixed effects regression
 
-[kimma](https://github.com/BIGslu/kimma) is an under-development package to run true linear mixed effects models on RNA-seq data. Under the hood, it uses `lmer( )` to fit models as we did earlier for the 1 gene.  
+[dream](https://academic.oup.com/bioinformatics/article/37/2/192/5878955) is an extension to fit true mixed effects models of RNA-seq data. Instead of 1 random effect estimate per donor, dream allows different estimates for each gene within a donor. This is important as the impacts of repeated measures or paired sample design are not consistent across all genes.
 
-```{r kimma}
-fit3 <- kmFit(dat = example.voom, patientID = "donorID",
-              model = "~ virus + asthma + (1|donorID)", 
-              run.lme = TRUE)
-fdr3 <- fit3$lme
+Note that the weights used in this model (in `example.voom$weights`) are `voom` weights from limma, not the correct weights for dream. Thus, this example is to show you how to run dream but the results are not valid with these incorrect weights. See the dream tutorial in Resources for more info.
+
+```{r dream}
+fit3 <- dream(exprObj = example.voom, 
+              formula = ~ virus + asthma + (1|donorID),
+              data = example.voom$targets)
+efit3 <- eBayes(fit3)
+fdr3 <- extract_lmFit(design = fit3$design, fit=efit3) 
 ```
 
-## Compare limma and kimma
+## kimma mixed effects regression
+
+[kimma](https://github.com/BIGslu/kimma) is an under-development package to run true linear mixed effects models on RNA-seq data. Under the hood, it uses `lmer( )` to fit models as we did earlier for the 1 gene. Unlike limma or dream, it also allows you to have a matrix of pairwise comparisons as a random effect such as kinship measures (not shown in this workshop).
+
+```{r kimma}
+fit4 <- kmFit(dat = example.voom, patientID = "donorID",
+              model = "~ virus + asthma + (1|donorID)", 
+              run.lme = TRUE)
+fdr4 <- fit4$lme
+```
+
+## Compare methods
 
 ```{r}
 #List 5 genes most signif for virus
@@ -302,23 +351,43 @@ top.genes <- fdr %>%
 fdr.limma <- fdr %>% 
   mutate(group = "limma LM") %>% 
   bind_rows(mutate(fdr2, group="limma LME")) %>% 
+  #bind_rows(mutate(fdr3, group="dream LME")) %>% 
   filter(geneName %in% top.genes & variable == "virusHRV") %>% 
   select(group, geneName, adj.P.Val) %>% 
   rename(gene=geneName, FDR=adj.P.Val)
 
 #Add kimma results
-fdr3 %>% 
+fdr4 %>% 
   mutate(group = "kimma LME") %>% 
   filter(gene %in% top.genes & variable == "virus") %>% 
   select(group, gene, FDR) %>% 
   bind_rows(fdr.limma) %>% 
-  mutate(group = factor(group, levels=c("limma LM", "limma LME", "kimma LME")),
+  mutate(group = factor(group, levels=c("limma LM", "limma LME", #"dream LME", 
+                                        "kimma LME")),
          FDR = formatC(FDR, digits=2)) %>% 
   arrange(group) %>% 
   pivot_wider(names_from = group, values_from = FDR)
 ```
 
-Looking at the top 5 most significant genes by limma simple linear regression, we can see that both limma's pseudo mixed effect and kimma's true mixed effect result in changes in FDR. While all of these genes would be classified as differentially expression genes (DEG) at FDR < 0.01, difference in the model can greatly impact DEG lists when effects are not as pronounced as viral infection or there is more inter-individual variation. Thus, as always, it's important to use a model appropriate to your data.
+Looking at 5 smallest FDR values from limma simple linear regression, we can see that the mixed effect methods result in changes in significance estimates. While all of these genes would be classified as differentially expression genes (DEG) at FDR < 0.01, differences exist in many genes as seen by the number of overlapping DEG at FDR < 0.05 in the Venn below. Thus, as always, it's important to use a model appropriate to your data.
+
+Remember that the dream results were not valid because of the example data weights. Thus, it are not included here. 
+
+```{r}
+library(venn)
+venn.ls <- list()
+venn.ls [["limma LM"]] <- fdr %>% 
+  filter(variable == "virusHRV" & adj.P.Val < 0.05) %>% 
+  distinct(geneName) %>% unlist(use.names = FALSE)
+venn.ls [["limma LME"]] <- fdr2 %>% 
+  filter(variable == "virusHRV" & adj.P.Val < 0.05) %>% 
+  distinct(geneName) %>% unlist(use.names = FALSE)
+venn.ls [["kimma LME"]] <- fdr4 %>% 
+  filter(variable == "virus" & FDR < 0.05) %>% 
+  distinct(gene) %>% unlist(use.names = FALSE)
+
+venn(venn.ls, box = FALSE)
+```
 
 # Resources
 
@@ -332,6 +401,9 @@ Looking at the top 5 most significant genes by limma simple linear regression, w
 * limma
   - Chapter 15 <https://www.bioconductor.org/packages/devel/bioc/vignettes/limma/inst/doc/usersguide.pdf>
   - <https://ucdavis-bioinformatics-training.github.io/2018-June-RNA-Seq-Workshop/thursday/DE.html>
+* dream
+  - <https://academic.oup.com/bioinformatics/article/37/2/192/5878955>
+  - <https://bioconductor.org/packages/release/bioc/vignettes/variancePartition/inst/doc/dream.html>
 * kimma
   - <https://github.com/BIGslu/tutorials/blob/main/RNAseq/3.Hawn_RNAseq_voom.to.DEG.pdf>
 
