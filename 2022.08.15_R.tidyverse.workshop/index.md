@@ -19,10 +19,18 @@ Each lesson
 
 ## Additional resources
 
-#### General workshops 
+#### Local groups
 
+* [Rladies Seattle](https://www.meetup.com/rladies-seattle/) Not just for ladies! A pro-actively inclusive R community with both in-person and online workshops, hangouts, etc.
+* [Seattle useR Group](https://www.meetup.com/Seattle-useR/)
+
+#### General R
+
+* [R cheatsheets](https://www.rstudio.com/resources/cheatsheets/) also available in RStudio under Help > Cheatsheets
 * [The Carpentries](https://carpentries.org/workshops/#workshop-curriculum) for workshops on R, python, command line, git, and more! Introductory through intermediate content.
 * [EDUCE](https://educe-ubc.github.io/workshops/) for R workshops using microbial ecology data. Intro R, tidyverse, reproducible research, and statistics.
+* [TidyTuesday](https://github.com/rfordatascience/tidytuesday) A weekly plotting challenge
+* [R code club](https://www.riffomonas.org/code_club/) Dr. Pat Schloss opened his lab's coding club to remote participation.
 
 #### RNA-seq data analysis
 
