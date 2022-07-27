@@ -35,6 +35,7 @@ Each lesson
 
 ***
 
+[index]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/index.html
 [lesson0]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/0_setup.html
 [lesson1]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/1_introR.html
 [lesson2]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/2_tidyverse.html
