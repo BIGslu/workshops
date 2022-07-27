@@ -1,0 +1,353 @@
+---
+title: "Data manipulation in dplyr and tidyr"
+author: |
+    | Kim Dill-McFarland
+    | Adapted from [U of Michigan Carpentries](umcarpentries.org/intro-curriculum-r/)
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+---
+
+```{r, include=FALSE}
+knitr::opts_chunk$set(fig.path = 'figures/')
+#set working dir to project
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+# 2. Introduction to the tidyverse
+
+The tidyverse is not just one package, but a collection of several packages that are designed to work well together for data analysis tasks. Let's load the tidyverse and read in the metadata again.
+
+For more information on installation, see the [setup instructions][lesson0].
+
+```{r loadMetadata}
+library(tidyverse)
+meta <- read_csv("data/metadata.csv")
+```
+
+Take a look at the dataset with `View()`:
+
+```{r, eval=FALSE}
+View(meta)
+```
+
+Here is a brief description of the variables in these data.
+
+* `libID` (character): Unique library ID for each sequencing library. Formatted as ptID_condition
+* `ptID` (character): Patient ID. Each patient has 2 libraries which differ in their `condition`
+* `condition` (character): Experimental condition. Media for media control. Mtb of *M. tuberculosis* infected.
+* `age_dys` (numeric): Age in ages
+* `sex` (character): Biological sex, M or F
+* `ptID_old` (character): Old patient ID with leading zeroes
+* `RNAseq` (logical): If the library has pass-filter RNA-seq data
+* `methylation` (logical): If the library has pass-filter methylation data
+* `total_seq` (numeric): Total number of pass-filter sequences
+
+## Intro dplyr
+### select
+
+You can use the `select` function to keep only the columns that you want and remove columns that you don't need.
+
+```{r}
+select(meta, ptID)
+```
+
+The first argument to the `select` function is our data frame, and the second
+argument is the name of the column we want to keep. We can continue to list multiple columns to keep by separating with a comma.
+
+```{r}
+select(meta, ptID, total_seq)
+```
+
+If you want to keep all but one column, put the minus (`-`) sign in front of it. I like to think of it as "subtracting" the column from the data frame.
+
+```{r}
+select(meta, -ptID_old)
+```
+
+### filter
+
+You can use `filter` to remove/keep rows. Instead of specifying a column name as in `select`, you provide a statement that gives TRUE/FALSE and `filter` keeps all the rows for which that statement is TRUE. The [conditional operators](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/1_introR.html#Quick_reference:_Conditional_statements) we saw in Intro R will help with this!
+
+Let's filter to just the Media samples.
+
+```{r}
+filter(meta, condition == "Media")
+```
+
+You can string together multiple statements and ask if both/all are TRUE with and `&` or if at least one is TRUE with or `|`. Notice that the `&` statement removes all rows because no library has both a Media and Mtb condition. In contrast, the `|` statement keeps all rows because all libraries are either the Media or Mtb condition.
+
+```{r}
+filter(meta, condition == "Media" & condition == "Mtb")
+
+filter(meta, condition == "Media" | condition == "Mtb")
+```
+
+> #### Quotes vs No Quotes
+>
+> Notice that we put the word "Media" inside quotes. This is because we are not 
+> using a column from inside our data frame. When you need to include actual
+> text values in R, they will be placed inside quotes to tell them apart from
+> other object or variable names.
+> 
+> The general rule is that if you want to use values from the columns of your
+> data object, then you supply the name of the column without quotes, but if you
+> want to specify a value that does not come from your data, then use quotes.
+
+### rename
+
+Sometimes your variable names are not ideal. `rename` does just want it says; it renames columns in your data. The syntax for `rename` is to give the new name first and then tell R what that new name should replace, so `new_name =  old_name`. Here, were rename condition to infection as this better represents those data.
+
+```{r}
+rename(meta, infection = condition)
+```
+
+### summarize
+
+The function `summarize()` performs summary statistics on your data. We can use it to find the mean, median, or other statistics about the dataset. Let's find the average age in days below:
+
+```{r}
+summarize(meta, mean(age_dys))
+```
+
+Notice that `summarize` automatically names the column with the summary statistic based on the function used to calculate that statistic. This is not ideal as the formatting has paranthese. So we can specify a name instead.
+
+```{r}
+summarize(meta, mean_age_dys = mean(age_dys))
+```
+
+### pipes
+
+Instead of including the data as an argument, we can use the *pipe operator* `%>%` to pass the data value into the `summarize` function. 
+
+```{r Avgage_dysWithPipe}
+meta %>% summarize(mean_age_dys = mean(age_dys))
+```
+ 
+This line of code will do the exact same thing as our previous summary command, but the piping function tells R to use the `meta` data frame as the first argument in the next function.
+
+This lets us "chain" together multiple functions. The pipe (`%>%`) takes the output from the left side and use it as input to the right side. 
+ 
+We can also add an <kdb>Enter</kdb> to make it look nicer:  
+
+```{r Avgage_dysWithPipe2}
+meta %>%
+  summarize(mean_age_days = mean(age_dys))
+```
+
+Using the *pipe operator* `%>%` and enter command makes our code more readable. The *pipe operator* `%>%` also helps to avoid using nested function and minimizes the need for new variables.
+
+Since we use the pipe operator so often, there is a keyboard shortcut for it in RStudio. You can press <kdb>Ctrl</kdb>+<kdb>Shift</kdb>+<kdb>M<kdb> on Windows or <kdb>Cmd<kdb>+<kdb>Shift<kdb>+<kdb>M<kdb> on a Mac.
+
+### group_by
+
+The comes in handy with functions like `group_by`. If we want to calculate the mean age in days for males and females separately, we can use `group_by` before summarize:
+
+```{r}
+meta %>% 
+  group_by(sex) %>% 
+  summarize(mean_age_days = mean(age_dys))
+```
+
+And we could merge this with a filter to only look at the Media libraries, since each age is repeated for that patient's Media and Mtb libraries. The results is the same in this case but filtering would be important if any of our patient's were missing one of the conditions.
+
+```{r}
+meta %>% 
+  filter(condition == "Media") %>% 
+  group_by(sex) %>% 
+  summarize(mean_age_days = mean(age_dys))
+```
+
+### mutate
+
+Sometimes we would like to create a new column based on the values in an existing one. For example, age is days is a little difficult to understand. Let's add a column with age in years.
+
+```{r}
+meta %>% 
+  mutate(age_yrs = age_dys / 365.25)
+```
+
+Note that this new column is not saved in meta because we printed the result to the console and did not save it to the environment. We can overwrite the `meta` data frame so it will now contain the `age_yrs` column.
+
+```{r}
+meta <- meta %>% 
+  mutate(age_yrs = age_dys / 365.25)
+meta
+```
+
+### Exercises: dplyr
+
+1. Create a new column `total_seq_millions` based on `total_seq`. 
+2. What is another way to end up with only the Media rows instead of `condition == "Media"`?
+3. Try calculating the mean total number of sequences for the Media and Mtb conditions.
+
+## Intro tidyr
+### pivot
+
+Data comes in many shapes and sizes, and one way we classify data is either
+"wide" or "long." Data that is "long" has one row per observation. The metadata
+is in a long format. We have one row for each patient sample and each variable
+is in a different column. We might also describe these data as "tidy" because it makes
+it easy to work with `ggplot2` and `dplyr` functions (this is where the "tidy"
+in "tidyverse" comes from). As tidy as it may be, sometimes we may want our data
+in a "wide" format. Typically, in "wide" format, each row represents a group of
+observations and each value is placed in a different column rather than a
+different row. For example, maybe we want each patient to have 1 row and their Media/Mtb data to be spread across columns.
+
+The `tidyr` package in the tidyverse contains the functions `pivot_wider` and `pivot_longer` that
+make it easy to switch between the two formats.
+
+#### pivot_wider
+
+For each patient, we have two samples: `Media` and `Mtb`. In the metadata, the
+only difference in these two conditions is the `libID` column (which is
+redundant with the `ptID` and `condition`) and the `total_seq` column. We can
+take the condition column and create two new columns, one with the total seqs in
+the media sample and one with the total seqs in the mtb sample. This is called
+"pivoting" the data frame "wider" because we rearrange it by creating an
+additional column and making it have fewer rows. Let's try it!
+
+```{r}
+meta %>% 
+  select(-libID) %>% 
+  pivot_wider(names_from = condition, values_from = total_seq)
+```
+
+Notice here that we tell `pivot_wider()` which columns to pull the names we wish our new columns to be named from the year variable, and the values to populate those columns from the condition variable. (Again, neither of which have to be in quotes in the code when there are no special characters or spaces - certainly an incentive not to use special characters or spaces!) We see that the resulting table has new columns by year, and the values populate it with our remaining variables dictating the rows.
+
+Maybe we should assign those columns more informative names:
+
+```{r}
+meta %>% 
+  select(-libID) %>% 
+  pivot_wider(names_from = condition, values_from = total_seq,
+              names_prefix = "total_seq_")
+```
+
+And now let's save the new wider metadata to a new variable:
+
+```{r}
+meta_wide <- meta %>% 
+  select(-libID) %>% 
+  pivot_wider(names_from = condition, values_from = total_seq)
+```
+
+Notice that the number of rows and columns has changed:
+
+```{r}
+nrow(meta)
+ncol(meta)
+nrow(meta_wide)
+ncol(meta_wide)
+```
+
+#### pivot_longer
+
+Everything we did with `pivot_wider`, we can reverse with `pivot_longer`.
+Maybe you receive a data frame in a wide format, but you need it in a long format.
+Here's how we can get back to a long data frame:
+
+```{r}
+meta_wide %>% 
+  pivot_longer(c(Media, Mtb), 
+               names_to = 'condition', values_to = 'total_seq')
+```
+
+## More from dplyr
+### join
+
+Often not all your data is pre-compiled in one nice, tidy data frame. You may have multiple files, batches, etc to work with. dplyr's join functions allow use to combined data frame without fear of copy-paste errors or missing anything!
+
+So far, we've been working with just the metadata - a single data frame. Let's adventure into the full RNA-seq `dat` object so we have multiple data frames to combine.
+
+```{r}
+load("data/dat_voom.RData")
+```
+
+First, we have the normalized log2 counts per million (CPM) in `E`
+
+```{r}
+dat$E[1:3,1:3]
+```
+
+Second, we have the same metadata as our `meta` object in the `targets` data.
+
+```{r}
+dat$targets[1:3,]
+```
+
+Looking at these two data frames, they do not share any columns - thus there is nothing to join them with. However, notice that the column names in the counts data are the libIDs from the metadata! We can use pivot to get the joining column we need.
+
+Notice that since `E` is a matrix with rownames, we must force it to be a data frame and move the rownames into a dat column.
+
+```{r}
+E_long <- as.data.frame(dat$E) %>% 
+  rownames_to_column("gene") %>% 
+  pivot_longer(-gene, names_to = "libID", values_to = "log2CPM")
+
+E_long
+```
+
+Now both data frames have a `libID` column!
+
+Let's combine our  sequence counts with our metadata.
+To combine two data frames, we will use a `join` function.
+The dplyr package has a number of tools for joining data frames together depending on what we want to do with the rows of the data of countries that are not represented in both data frames. 
+
+`?join`
+
+We have a few options here:
+
+> The mutating joins add columns from y to x, matching rows based on the keys:
+>  - inner_join(): includes all rows in x and y.
+>  - left_join(): includes all rows in x.
+>  - right_join(): includes all rows in y.
+>  - full_join(): includes all rows in x or y.
+
+
+In an "inner join", the new data frame only has those rows where the same key is found in both data frames. This is a very commonly used join.
+
+<img src="https://github.com/BIGslu/2022_ASM_Microbe_RNAseq/blob/main/2_tidyverse/images/r-data-analysis/join-inner.png?raw=true" width="400"/>
+
+```{r}
+full_data <- inner_join(meta, E_long, by = 'libID')
+```
+
+These are the data we will use in our next session on plotting in `ggplot`!
+
+### Exercises: pivot and join
+
+1. Filter the metadata to just Media samples. *Without running it*, outline what the data would look like if you `inner_join` the long expression data `E_long` with metadata containing only Media samples.
+2. Similarly, what would happen with `full_join`?
+
+I find this page helpful when working with joins. <https://stat545.com/join-cheatsheet.html>
+
+# *Navigation*
+
+* [Workshop index][index]
+* Previous lesson: [Intro to R and RStudio][lesson1]
+* Next lesson: [Data visualization in ggplot][lesson3]
+* [Lesson source code][lesson2rmd]
+
+***
+
+[index]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/index.html
+[lesson0]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/0_setup.html
+[lesson1]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/1_introR.html
+[lesson2]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/2_tidyverse.html
+[lesson3]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/3_ggplot.html
+[lesson1rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/1_introR.Rmd
+[lesson2rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/2_tidyverse.Rmd
+[lesson3rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/3_ggplot.Rmd
+
+[workshop]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/tidyverse_RNAseq.html
