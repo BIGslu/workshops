@@ -1,7 +1,7 @@
 ---
 title: "Introduction to R and RStudio"
 subtitle: "RSTR-seq edition"
-author: "Kim Dill-McFarland, <kadm@uw.edu>"
+author: "Kim Dill-McFarland"
 date: "version `r format(Sys.time(), '%B %d, %Y')`"
 output:
   html_document:
@@ -17,7 +17,7 @@ editor_options:
 knitr::opts_chunk$set(fig.width = 3, fig.height = 3)
 ```
 
-# Overview
+# 1. Introduction to R and RStudio
 In this workshop, we introduce you to R and RStudio at the beginner level. In it, we cover:
 
 * R and RStudio including projects, scripts, and packages
@@ -29,10 +29,10 @@ We will do all of our work in [RStudio](https://www.rstudio.com/). RStudio is an
 
 During the workshop, we will build an R script together, which will be posted as 'live_notes' after the workshop at <https://github.com/BIGslu/workshops/tree/main/2022.08.15_R.tidyverse.workshop/live_notes>
 
-# Prior to the workshop
+## Prior to the workshop
 Please [install R](http://www.r-project.org) and [RStudio](https://www.rstudio.com/products/rstudio/download/). See the [setup instructions][lesson0] for more details.
 
-# A Tour of RStudio
+## A Tour of RStudio
 When you start RStudio, you will see something like the following window appear:
 
 ![](images/rstudio.png)
@@ -47,13 +47,13 @@ Notice that the window is divided into three "panes":
 
 To change the look of RStudio, you can go to Tools -> Global Options -> Appearance and select colors, font size, etc. If you plan to be working for longer periods, we suggest choosing a dark background color scheme to save your computer battery and your eyes.
 
-## RStudio Projects
+### RStudio Projects
 
 Projects are a great feature of RStudio. When you create a project, RStudio creates an `.Rproj` file that links all of your files and outputs to the project directory. When you import data, R automatically looks for the file in the project directory instead of you having to specify a full file path on your computer like `/Users/username/Desktop/`. R also automatically saves any output to the project directory. Finally, projects allow you to save your R environment in `.RData` so that when you close RStudio and then re-open it, you can start right where you left off without re-importing any data or re-calculating any intermediate steps.
 
 RStudio has a simple interface to create and switch between projects, accessed from the button in the top-right corner of the RStudio window. (Labeled "Project: (None)", initially.)
 
-#### Create a Project
+##### Create a Project
 Let's create a project to work in for this workshop. Start by clicking the "Project" button in the upper right or going to the "File" menu. Select "New Project" and the following will appear.
 
 ![](images/new_project1.png){width=50%}
@@ -64,7 +64,7 @@ After your project is created, navigate to its directory using your Finder/File 
 
 To access this project in the future, simply double-click the `RProj` and RStudio will open the project or choose File > Open Project from within an already open RStudio window.
 
-## R Scripts
+### R Scripts
 
 R script files are the primary way in which R facilitates reproducible research. They contain the code that loads your raw data, cleans it, performs the analyses, and creates and saves visualizations. R scripts maintain a record of everything that is done to the raw data to reach the final result. That way, it is very easy to write up and communicate your methods because you have a document listing the precise steps you used to conduct your analyses. This is one of R's primary advantages compared to traditional tools like Excel, where it may be unclear how to reproduce the results. 
 
@@ -77,7 +77,7 @@ Let's create an R script (File > New File > R Script) and save it as `introR_liv
 
 We will work together to create and populate the `introR_live_notes.R` script throughout this workshop. 
 
-## R packages
+### R packages
 #### CRAN
 
 R packages are units of shareable code, containing functions that facilitate and enhance analyses. Let's install `tidyverse`, which is actually a meta-package containing several packages useful in data manipulation and plotting. Packages are typically installed from [CRAN](https://www.r-project.org/) (The Comprehensive R Archive Network), which is a database containing R itself as well as many R packages. Any package can be installed from CRAN using the `install.packages` function. You can input this into your console (as opposed to `live_notes.R`) since once a package is installed on your computer, you won't need to re-install it again.
@@ -111,7 +111,7 @@ Then install your package of choice using it's installer. Here, we install `limm
 BiocManager::install("limma")
 ```
 
-# Getting started
+## Getting started
 
 Before doing anything in R, it is a good idea to set your random seed. Your analyses may not end up using a seed but by setting it, you ensure that *everything* is exactly reproducible.
 
@@ -119,12 +119,12 @@ Before doing anything in R, it is a good idea to set your random seed. Your anal
 set.seed(4389)
 ```
 
-## Organize data
+### Organize data
 
-Create a directory *inside* your project directory called `data` and move the 3 data files into this directory.
+Create a directory *inside* your project directory called `data` and move the data files into this directory.
 
-## Loading data into R
-## Data frames from `.csv`, `.tsv`, etc.
+### Loading data into R
+### Data frames from `.csv`, `.tsv`, etc.
 
 One of R's most essential data structures is the data frame, which is simply a table of `m` columns by `n` rows. First, we will read in the RNA-seq metadata into RStudio using the base R `read.table` function.
 
@@ -150,7 +150,7 @@ meta <- read.table(file="data/metadata.csv",
 
 Now whenever we want to use these data, we simply call `meta`
 
-## Help function
+### Help function
 
 You can read up about the different arguments of a specific function by typing `?Function` or `help(Function)` in your R console.
 
@@ -165,7 +165,7 @@ You will notice that there are multiple functions of the `read.table` help page.
 meta <- read.csv(file="data/metadata.csv")
 ```
 
-## Complex data from `.RData`
+### Complex data from `.RData`
 
 You may have data that do not fit nicely into a single table or into a table at all (like plots). You can save these as `.RData`, which can be loaded directly into R. You can also save multiple tables and/or other objects in a single `.RData` file to make loading your data quick and easy. Moreover, `.RData` are automatically compressed so they take up less storage space than multiple tables.
 
@@ -181,7 +181,7 @@ See the objects data type with `class`.
 class(dat)
 ```
 
-# Data types
+## Data types
 ### Simple
 
 Let's return to the simpler metadata for now. This data frame consists of `r nrow(meta)` rows (observations) and `r ncol(meta)` columns (variables). You can see this quickly using the dimension function `dim`
@@ -239,8 +239,8 @@ class(dat$genes$hgnc_symbol)
 
 Of note, working with `S4` objects is very similar to `S3` except that they are accessed with `@` instead of `$`. However, we will not use `S4` in this workshop.
 
-# Working with vectors and data frames
-## Operating on vectors
+## Working with vectors and data frames
+### Operating on vectors
 
 A large proportion of R functions operate on vectors to perform quick computations over their values. Here are some examples:
 
@@ -255,7 +255,7 @@ meta$total_seq > 10E6
 unique(meta$condition)
 ```
 
-## Using the correct class
+### Using the correct class
 
 Functions executed on an object in R may respond exclusively to one or more data types or may respond differently depending on the data type. When you use the incorrect data type, you will get an error or warning message. For example, you cannot take the mean of a factor or character.
 
@@ -264,7 +264,7 @@ Functions executed on an object in R may respond exclusively to one or more data
 mean(meta$libID)
 ```
 
-## Subsetting vectors and data frames
+### Subsetting vectors and data frames
 
 Since vectors are 1D arrays of a defined length, their individual values can be retrieved using vector indices. R uses 1-based indexing, meaning the first value in an R vector corresponds to the index 1. (Importantly, if you use python, that language is 0-based, meaning the first value is index 0.) Each subsequent element increases the index by 1. For example, we can extract the value of the 5th element of the `libID` vector using the square bracket operator `[ ]` like so.
 
@@ -291,7 +291,7 @@ meta[logical.vector, ]
 
 Subsetting is extremely useful when working with large data. We will learn more complex subsets on day 2 using the tidyverse. But first...
 
-## Quick reference: Conditional statements
+### Quick reference: Conditional statements
 
 Statement | Meaning
 --------- | -------
@@ -308,7 +308,7 @@ Statement | Meaning
 `&`       | And
 `|`       | Or
 
-# Exercises: Part 1
+## Exercises: Intro R
 
 1. Using help to identify the necessary arguments for the log function, compute the natural logarithm of 4, base 2 logarithm of 4, and base 4 logarithm of 4.
 
@@ -320,20 +320,12 @@ Using the `meta` data frame:
     - return the cell where `lib.size` equals 14509963
 4. Subset the data to observations where `RSID` equals "RS102521" or "RS102484". *Hint*: Use a logical vector. 
 
-# Additional resources
+# *Navigation*
 
-* [R cheatsheets](https://www.rstudio.com/resources/cheatsheets/) also available in RStudio under Help > Cheatsheets
-* [Rladies Seattle](https://www.meetup.com/rladies-seattle/) Not just for ladies! A pro-actively inclusive R community with both in-person and online workshops, hangouts, etc.
-* [The Carpentries](https://carpentries.org/)
-* [TidyTuesday](https://github.com/rfordatascience/tidytuesday) A weekly plotting challenge
-* [R code club](https://www.riffomonas.org/code_club/) Dr. Pat Schloss opened his lab's coding club to remote participation. 
-* [Seattle useR Group](https://www.meetup.com/Seattle-useR/)
-
-# R session
-
-```{r}
-sessionInfo()
-```
+* [Workshop index][index]
+* Previous lession: [Setup and installation][lesson0]
+* Next lesson: [Data manipulation in dplyr and tidyr][lesson2]
+* [Lesson source code][lesson1rmd]
 
 ***
 
@@ -342,4 +334,8 @@ sessionInfo()
 [lesson1]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/1_introR.html
 [lesson2]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/2_tidyverse.html
 [lesson3]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/3_ggplot.html
+[lesson1rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/1_introR.Rmd
+[lesson2rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/2_tidyverse.Rmd
+[lesson3rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/3_ggplot.Rmd
+
 [workshop]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/tidyverse_RNAseq.html
