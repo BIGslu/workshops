@@ -1,0 +1,36 @@
+---  
+title: "Introduction to R and the tidyverse"
+subtitle: "RNA-seq edition"
+author: "Kim Dill-McFarland, U of Washington"
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+---
+
+```{r, include=FALSE}
+#set working dir to project
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+```{r child = '0_setup.Rmd'}
+```
+
+```{r child = '1_introR.Rmd'}
+```
+
+```{r child = '2_tidyverse.Rmd'}
+```
+
+```{r child = '3_ggplot.Rmd'}
+```
+
