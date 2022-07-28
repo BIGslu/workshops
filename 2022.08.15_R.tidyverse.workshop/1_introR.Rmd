@@ -323,7 +323,7 @@ Using the `meta` data frame:
 # *Navigation*
 
 * [Workshop index][index]
-* Previous lession: [Setup and installation][lesson0]
+* Previous lesson: [Setup and installation][lesson0]
 * Next lesson: [Data manipulation in dplyr and tidyr][lesson2]
 * [Lesson source code][lesson1rmd]
 
@@ -338,4 +338,4 @@ Using the `meta` data frame:
 [lesson2rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/2_tidyverse.Rmd
 [lesson3rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/3_ggplot.Rmd
 
-[workshop]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/tidyverse_RNAseq.html
+[workshop]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/R_tidyverse_RNAseq_edition.html

@@ -1,5 +1,6 @@
 ---
 title: "Data manipulation in dplyr and tidyr"
+subtitle: "RSTR-seq edition"
 author: |
     | Kim Dill-McFarland
     | Adapted from [U of Michigan Carpentries](umcarpentries.org/intro-curriculum-r/)
@@ -120,7 +121,7 @@ The function `summarize()` performs summary statistics on your data. We can use 
 summarize(meta, mean(age_dys))
 ```
 
-Notice that `summarize` automatically names the column with the summary statistic based on the function used to calculate that statistic. This is not ideal as the formatting has paranthese. So we can specify a name instead.
+Notice that `summarize` automatically names the column with the summary statistic based on the function used to calculate that statistic. This is not ideal as the formatting has parentheses. So we can specify a name instead.
 
 ```{r}
 summarize(meta, mean_age_dys = mean(age_dys))
@@ -323,8 +324,6 @@ In an "inner join", the new data frame only has those rows where the same key is
 full_data <- inner_join(meta, E_long, by = 'libID')
 ```
 
-These are the data we will use in our next session on plotting in `ggplot`!
-
 ### Exercises: pivot and join
 
 1. Filter the metadata to just Media samples. *Without running it*, outline what the data would look like if you `inner_join` the long expression data `E_long` with metadata containing only Media samples.
@@ -350,4 +349,4 @@ I find this page helpful when working with joins. <https://stat545.com/join-chea
 [lesson2rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/2_tidyverse.Rmd
 [lesson3rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/3_ggplot.Rmd
 
-[workshop]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/tidyverse_RNAseq.html
+[workshop]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/R_tidyverse_RNAseq_edition.html
