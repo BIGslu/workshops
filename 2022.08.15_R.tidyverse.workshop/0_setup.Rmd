@@ -25,9 +25,9 @@ knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 
 ## Download the data
 
-Please download the data in [data.zip](https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/data/data.zip). Then, move data.zip to your Desktop and unzip it (usually double-clicking it will work).
+Please download the data in [data.zip](https://github.com/BIGslu/workshops/raw/main/2022.08.15_R.tidyverse.workshop/data/data.zip). Then, move data.zip to your Desktop and unzip it (usually double-clicking it will work).
 
-All workshop material and data are available at <https://github.com/BIGslu/workshops/tree/main/2022.08.15_R.tidyverse.workshop>.
+If the above link does not work, please try downloading the data with Download button at <https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/data/data.zip>.
 
 ## Install R and RStudio
 
@@ -46,10 +46,15 @@ Install R packages by running the following script in your R console (left panel
 ```{r eval=FALSE}
 #CRAN packages
 install.packages("tidyverse")
+install.packages("ggrepel")
 #Bioconductor packages
 install.packages("BiocManager")
 BiocManager::install("limma")
 ```
+
+*If prompted*, say `a` to "Update all/some/none? [a/s/n]" and `no` to "Do you want to install from sources the packages which need compilation? (Yes/no/cancel)"
+
+**This can take several minutes.**
 
 ## Check R package install
 
@@ -65,6 +70,7 @@ Then, check package(s) that load silently with no messages.
 
 ```{r}
 library(limma)
+library(ggrepel)
 ```
 
 #### R package versions

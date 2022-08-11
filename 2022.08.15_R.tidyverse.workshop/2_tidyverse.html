@@ -1519,30 +1519,47 @@ div.tocify {
 <h4 class="author"><div class="line-block">Kim Dill-McFarland<br />
 Adapted from <a href="umcarpentries.org/intro-curriculum-r/">U of
 Michigan Carpentries</a></div></h4>
-<h4 class="date">version July 28, 2022</h4>
+<h4 class="date">version August 01, 2022</h4>
 
 </div>
 
 
 <div id="introduction-to-the-tidyverse" class="section level1">
 <h1>2. Introduction to the tidyverse</h1>
+<p>In this workshop, we introduce you to the R <a href="https://www.tidyverse.org/">tidyverse</a>, a suite of packages for
+data manipulation and visualization in R. In it, we cover how to:</p>
+<ul>
+<li>Subset rows/columns</li>
+<li>Create new variables</li>
+<li>Calculate summary statistics</li>
+<li>Convert wide/long formats</li>
+<li>Merge data frames</li>
+</ul>
+<p>During the workshop, we will build an R script together, which will
+be posted as ‘live_notes’ after the workshop at <a href="https://github.com/BIGslu/workshops/tree/main/2022.08.15_R.tidyverse.workshop/live_notes" class="uri">https://github.com/BIGslu/workshops/tree/main/2022.08.15_R.tidyverse.workshop/live_notes</a></p>
 <p>The tidyverse is not just one package, but a collection of several
 packages that are designed to work well together for data analysis
-tasks. Let’s load the tidyverse and read in the metadata again.</p>
-<p>For more information on installation, see the <a href="https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/0_setup.html">setup
+tasks. Let’s load the tidyverse. For more information on installation,
+see the <a href="https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/0_setup.html">setup
 instructions</a>.</p>
 <pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
-<pre><code>## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
-## ✔ tibble  3.1.7     ✔ dplyr   1.0.9
+<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
+## ✔ tibble  3.1.8     ✔ dplyr   1.0.9
 ## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
-## ✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
-<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✔ readr   2.1.2     ✔ forcats 0.5.1
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()</code></pre>
+<p>We also load the metadata, this time using the <code>tidyverse</code>
+function <code>read_csv</code>. This function is very similar to base R
+<code>read.csv</code>, except that it automatically tells you the
+structure of the loaded data, performs better when determining different
+classes of data within a data frame, and save the object as a
+tibble.</p>
 <pre class="r"><code>meta &lt;- read_csv(&quot;data/metadata.csv&quot;)</code></pre>
-<pre><code>## Rows: 20 Columns: 9</code></pre>
-<pre><code>## ── Column specification ────────────────────────────────────────────────────────
+<pre><code>## Rows: 20 Columns: 9
+## ── Column specification ────────────────────────────────────────────────────────
 ## Delimiter: &quot;,&quot;
 ## chr (5): libID, ptID, condition, sex, ptID_old
 ## dbl (2): age_dys, total_seq
@@ -1550,6 +1567,12 @@ instructions</a>.</p>
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>class(meta)</code></pre>
+<pre><code>## [1] &quot;spec_tbl_df&quot; &quot;tbl_df&quot;      &quot;tbl&quot;         &quot;data.frame&quot;</code></pre>
+<p>A tibble is just a data frame with some extra hidden formatting. You
+will not need to interface with these hidden features and all the
+following functions would behave the same if you’d read in a simple
+<code>data.frame</code> with <code>read.csv</code>.</p>
 <p>Take a look at the dataset with <code>View()</code>:</p>
 <pre class="r"><code>View(meta)</code></pre>
 <p>Here is a brief description of the variables in these data.</p>
@@ -1573,10 +1596,16 @@ sequences</li>
 </ul>
 <div id="intro-dplyr" class="section level2">
 <h2>Intro dplyr</h2>
+<p>The first <code>tidyverse</code> package we will use is
+<code>dplyr</code>, which is for data manipulation. You do not need to
+load this package with <code>library</code> as it was already loaded as
+part of the <code>tidyverse</code>.</p>
 <div id="select" class="section level3">
 <h3>select</h3>
 <p>You can use the <code>select</code> function to keep only the columns
-that you want and remove columns that you don’t need.</p>
+that you want and remove columns that you don’t need. The first argument
+to the <code>select</code> function is our data frame, and the second
+argument is the name of the column we want to keep.</p>
 <pre class="r"><code>select(meta, ptID)</code></pre>
 <pre><code>## # A tibble: 20 × 1
 ##    ptID 
@@ -1601,10 +1630,8 @@ that you want and remove columns that you don’t need.</p>
 ## 18 pt09 
 ## 19 pt10 
 ## 20 pt10</code></pre>
-<p>The first argument to the <code>select</code> function is our data
-frame, and the second argument is the name of the column we want to
-keep. We can continue to list multiple columns to keep by separating
-with a comma.</p>
+<p>We can continue to list multiple columns to keep by separating with
+commas.</p>
 <pre class="r"><code>select(meta, ptID, total_seq)</code></pre>
 <pre><code>## # A tibble: 20 × 2
 ##    ptID  total_seq
@@ -1667,18 +1694,37 @@ operators</a> we saw in Intro R will help with this!</p>
 <p>Let’s filter to just the Media samples.</p>
 <pre class="r"><code>filter(meta, condition == &quot;Media&quot;)</code></pre>
 <pre><code>## # A tibble: 10 × 9
-##    libID     ptID  condition age_dys sex   ptID_old RNAseq methylation total_seq
-##    &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;           &lt;dbl&gt;
-##  1 pt01_Med… pt01  Media       12410 M     pt00001  TRUE   FALSE        9114402.
-##  2 pt02_Med… pt02  Media       12775 M     pt00002  TRUE   FALSE        9221555.
-##  3 pt03_Med… pt03  Media       11315 M     pt00003  TRUE   FALSE        6231728.
-##  4 pt04_Med… pt04  Media        8395 M     pt00004  TRUE   TRUE        10205557.
-##  5 pt05_Med… pt05  Media        7300 M     pt00005  TRUE   FALSE       15536685.
-##  6 pt06_Med… pt06  Media        6570 F     pt00006  TRUE   FALSE        7085995.
-##  7 pt07_Med… pt07  Media        7665 F     pt00007  TRUE   FALSE       10706098.
-##  8 pt08_Med… pt08  Media        8760 M     pt00008  TRUE   FALSE        9957906.
-##  9 pt09_Med… pt09  Media        6935 M     pt00009  TRUE   FALSE       13055276 
-## 10 pt10_Med… pt10  Media        8030 F     pt00010  TRUE   FALSE        8216706.</code></pre>
+##    libID      ptID  condition age_dys sex   ptID_old RNAseq methylation total_…¹
+##    &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;          &lt;dbl&gt;
+##  1 pt01_Media pt01  Media       12410 M     pt00001  TRUE   FALSE         9.11e6
+##  2 pt02_Media pt02  Media       12775 M     pt00002  TRUE   FALSE         9.22e6
+##  3 pt03_Media pt03  Media       11315 M     pt00003  TRUE   FALSE         6.23e6
+##  4 pt04_Media pt04  Media        8395 M     pt00004  TRUE   TRUE          1.02e7
+##  5 pt05_Media pt05  Media        7300 M     pt00005  TRUE   FALSE         1.55e7
+##  6 pt06_Media pt06  Media        6570 F     pt00006  TRUE   FALSE         7.09e6
+##  7 pt07_Media pt07  Media        7665 F     pt00007  TRUE   FALSE         1.07e7
+##  8 pt08_Media pt08  Media        8760 M     pt00008  TRUE   FALSE         9.96e6
+##  9 pt09_Media pt09  Media        6935 M     pt00009  TRUE   FALSE         1.31e7
+## 10 pt10_Media pt10  Media        8030 F     pt00010  TRUE   FALSE         8.22e6
+## # … with abbreviated variable name ¹​total_seq</code></pre>
+<p>This is the same as what we did in Intro R with the following, only
+it is more readable and will fit into a <code>tidyverse</code> workflow.
+More on this when we get to pipes!</p>
+<pre class="r"><code>meta[meta$condition == &quot;Media&quot;, ]</code></pre>
+<pre><code>## # A tibble: 10 × 9
+##    libID      ptID  condition age_dys sex   ptID_old RNAseq methylation total_…¹
+##    &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;          &lt;dbl&gt;
+##  1 pt01_Media pt01  Media       12410 M     pt00001  TRUE   FALSE         9.11e6
+##  2 pt02_Media pt02  Media       12775 M     pt00002  TRUE   FALSE         9.22e6
+##  3 pt03_Media pt03  Media       11315 M     pt00003  TRUE   FALSE         6.23e6
+##  4 pt04_Media pt04  Media        8395 M     pt00004  TRUE   TRUE          1.02e7
+##  5 pt05_Media pt05  Media        7300 M     pt00005  TRUE   FALSE         1.55e7
+##  6 pt06_Media pt06  Media        6570 F     pt00006  TRUE   FALSE         7.09e6
+##  7 pt07_Media pt07  Media        7665 F     pt00007  TRUE   FALSE         1.07e7
+##  8 pt08_Media pt08  Media        8760 M     pt00008  TRUE   FALSE         9.96e6
+##  9 pt09_Media pt09  Media        6935 M     pt00009  TRUE   FALSE         1.31e7
+## 10 pt10_Media pt10  Media        8030 F     pt00010  TRUE   FALSE         8.22e6
+## # … with abbreviated variable name ¹​total_seq</code></pre>
 <p>You can string together multiple statements and ask if both/all are
 TRUE with and <code>&amp;</code> or if at least one is TRUE with or
 <code>|</code>. Notice that the <code>&amp;</code> statement removes all
@@ -1688,42 +1734,43 @@ either the Media or Mtb condition.</p>
 <pre class="r"><code>filter(meta, condition == &quot;Media&quot; &amp; condition == &quot;Mtb&quot;)</code></pre>
 <pre><code>## # A tibble: 0 × 9
 ## # … with 9 variables: libID &lt;chr&gt;, ptID &lt;chr&gt;, condition &lt;chr&gt;, age_dys &lt;dbl&gt;,
-## #   sex &lt;chr&gt;, ptID_old &lt;chr&gt;, RNAseq &lt;lgl&gt;, methylation &lt;lgl&gt;, total_seq &lt;dbl&gt;</code></pre>
+## #   sex &lt;chr&gt;, ptID_old &lt;chr&gt;, RNAseq &lt;lgl&gt;, methylation &lt;lgl&gt;, total_seq &lt;dbl&gt;
+## # ℹ Use `colnames()` to see all variable names</code></pre>
 <pre class="r"><code>filter(meta, condition == &quot;Media&quot; | condition == &quot;Mtb&quot;)</code></pre>
 <pre><code>## # A tibble: 20 × 9
-##    libID     ptID  condition age_dys sex   ptID_old RNAseq methylation total_seq
-##    &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;           &lt;dbl&gt;
-##  1 pt01_Med… pt01  Media       12410 M     pt00001  TRUE   FALSE        9114402.
-##  2 pt01_Mtb  pt01  Mtb         12410 M     pt00001  TRUE   FALSE        8918699.
-##  3 pt02_Med… pt02  Media       12775 M     pt00002  TRUE   FALSE        9221555.
-##  4 pt02_Mtb  pt02  Mtb         12775 M     pt00002  TRUE   FALSE        7733260.
-##  5 pt03_Med… pt03  Media       11315 M     pt00003  TRUE   FALSE        6231728.
-##  6 pt03_Mtb  pt03  Mtb         11315 M     pt00003  TRUE   FALSE        7105193.
-##  7 pt04_Med… pt04  Media        8395 M     pt00004  TRUE   TRUE        10205557.
-##  8 pt04_Mtb  pt04  Mtb          8395 M     pt00004  TRUE   TRUE         8413543.
-##  9 pt05_Med… pt05  Media        7300 M     pt00005  TRUE   FALSE       15536685.
-## 10 pt05_Mtb  pt05  Mtb          7300 M     pt00005  TRUE   FALSE       15509446.
-## 11 pt06_Med… pt06  Media        6570 F     pt00006  TRUE   FALSE        7085995.
-## 12 pt06_Mtb  pt06  Mtb          6570 F     pt00006  TRUE   FALSE        6588160.
-## 13 pt07_Med… pt07  Media        7665 F     pt00007  TRUE   FALSE       10706098.
-## 14 pt07_Mtb  pt07  Mtb          7665 F     pt00007  TRUE   FALSE        8576245.
-## 15 pt08_Med… pt08  Media        8760 M     pt00008  TRUE   FALSE        9957906.
-## 16 pt08_Mtb  pt08  Mtb          8760 M     pt00008  TRUE   FALSE        8220348.
-## 17 pt09_Med… pt09  Media        6935 M     pt00009  TRUE   FALSE       13055276 
-## 18 pt09_Mtb  pt09  Mtb          6935 M     pt00009  TRUE   FALSE       13800442.
-## 19 pt10_Med… pt10  Media        8030 F     pt00010  TRUE   FALSE        8216706.
-## 20 pt10_Mtb  pt10  Mtb          8030 F     pt00010  TRUE   FALSE        7599609.</code></pre>
-<blockquote>
-<h4 id="quotes-vs-no-quotes">Quotes vs No Quotes</h4>
+##    libID      ptID  condition age_dys sex   ptID_old RNAseq methylation total_…¹
+##    &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;          &lt;dbl&gt;
+##  1 pt01_Media pt01  Media       12410 M     pt00001  TRUE   FALSE         9.11e6
+##  2 pt01_Mtb   pt01  Mtb         12410 M     pt00001  TRUE   FALSE         8.92e6
+##  3 pt02_Media pt02  Media       12775 M     pt00002  TRUE   FALSE         9.22e6
+##  4 pt02_Mtb   pt02  Mtb         12775 M     pt00002  TRUE   FALSE         7.73e6
+##  5 pt03_Media pt03  Media       11315 M     pt00003  TRUE   FALSE         6.23e6
+##  6 pt03_Mtb   pt03  Mtb         11315 M     pt00003  TRUE   FALSE         7.11e6
+##  7 pt04_Media pt04  Media        8395 M     pt00004  TRUE   TRUE          1.02e7
+##  8 pt04_Mtb   pt04  Mtb          8395 M     pt00004  TRUE   TRUE          8.41e6
+##  9 pt05_Media pt05  Media        7300 M     pt00005  TRUE   FALSE         1.55e7
+## 10 pt05_Mtb   pt05  Mtb          7300 M     pt00005  TRUE   FALSE         1.55e7
+## 11 pt06_Media pt06  Media        6570 F     pt00006  TRUE   FALSE         7.09e6
+## 12 pt06_Mtb   pt06  Mtb          6570 F     pt00006  TRUE   FALSE         6.59e6
+## 13 pt07_Media pt07  Media        7665 F     pt00007  TRUE   FALSE         1.07e7
+## 14 pt07_Mtb   pt07  Mtb          7665 F     pt00007  TRUE   FALSE         8.58e6
+## 15 pt08_Media pt08  Media        8760 M     pt00008  TRUE   FALSE         9.96e6
+## 16 pt08_Mtb   pt08  Mtb          8760 M     pt00008  TRUE   FALSE         8.22e6
+## 17 pt09_Media pt09  Media        6935 M     pt00009  TRUE   FALSE         1.31e7
+## 18 pt09_Mtb   pt09  Mtb          6935 M     pt00009  TRUE   FALSE         1.38e7
+## 19 pt10_Media pt10  Media        8030 F     pt00010  TRUE   FALSE         8.22e6
+## 20 pt10_Mtb   pt10  Mtb          8030 F     pt00010  TRUE   FALSE         7.60e6
+## # … with abbreviated variable name ¹​total_seq</code></pre>
+<div id="quotes-vs-no-quotes" class="section level4">
+<h4>Quotes vs No Quotes</h4>
 <p>Notice that we put the word “Media” inside quotes. This is because we
 are not using a column from inside our data frame. When you need to
 include actual text values in R, they will be placed inside quotes to
 tell them apart from other object or variable names.</p>
-<p>The general rule is that if you want to use values from the columns
-of your data object, then you supply the name of the column without
-quotes, but if you want to specify a value that does not come from your
-data, then use quotes.</p>
-</blockquote>
+<p>The general rule is that if you want to use an R object (data frame,
+column, etc), then you supply the name without quotes. If you want to
+specify a value within the R object, then use quotes.</p>
+</div>
 </div>
 <div id="rename" class="section level3">
 <h3>rename</h3>
@@ -1731,32 +1778,33 @@ data, then use quotes.</p>
 just want it says; it renames columns in your data. The syntax for
 <code>rename</code> is to give the new name first and then tell R what
 that new name should replace, so <code>new_name =  old_name</code>.
-Here, were rename condition to infection as this better represents those
-data.</p>
+Here, we rename <code>condition</code> to <code>infection</code> as this
+better represents those data.</p>
 <pre class="r"><code>rename(meta, infection = condition)</code></pre>
 <pre><code>## # A tibble: 20 × 9
-##    libID     ptID  infection age_dys sex   ptID_old RNAseq methylation total_seq
-##    &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;           &lt;dbl&gt;
-##  1 pt01_Med… pt01  Media       12410 M     pt00001  TRUE   FALSE        9114402.
-##  2 pt01_Mtb  pt01  Mtb         12410 M     pt00001  TRUE   FALSE        8918699.
-##  3 pt02_Med… pt02  Media       12775 M     pt00002  TRUE   FALSE        9221555.
-##  4 pt02_Mtb  pt02  Mtb         12775 M     pt00002  TRUE   FALSE        7733260.
-##  5 pt03_Med… pt03  Media       11315 M     pt00003  TRUE   FALSE        6231728.
-##  6 pt03_Mtb  pt03  Mtb         11315 M     pt00003  TRUE   FALSE        7105193.
-##  7 pt04_Med… pt04  Media        8395 M     pt00004  TRUE   TRUE        10205557.
-##  8 pt04_Mtb  pt04  Mtb          8395 M     pt00004  TRUE   TRUE         8413543.
-##  9 pt05_Med… pt05  Media        7300 M     pt00005  TRUE   FALSE       15536685.
-## 10 pt05_Mtb  pt05  Mtb          7300 M     pt00005  TRUE   FALSE       15509446.
-## 11 pt06_Med… pt06  Media        6570 F     pt00006  TRUE   FALSE        7085995.
-## 12 pt06_Mtb  pt06  Mtb          6570 F     pt00006  TRUE   FALSE        6588160.
-## 13 pt07_Med… pt07  Media        7665 F     pt00007  TRUE   FALSE       10706098.
-## 14 pt07_Mtb  pt07  Mtb          7665 F     pt00007  TRUE   FALSE        8576245.
-## 15 pt08_Med… pt08  Media        8760 M     pt00008  TRUE   FALSE        9957906.
-## 16 pt08_Mtb  pt08  Mtb          8760 M     pt00008  TRUE   FALSE        8220348.
-## 17 pt09_Med… pt09  Media        6935 M     pt00009  TRUE   FALSE       13055276 
-## 18 pt09_Mtb  pt09  Mtb          6935 M     pt00009  TRUE   FALSE       13800442.
-## 19 pt10_Med… pt10  Media        8030 F     pt00010  TRUE   FALSE        8216706.
-## 20 pt10_Mtb  pt10  Mtb          8030 F     pt00010  TRUE   FALSE        7599609.</code></pre>
+##    libID      ptID  infection age_dys sex   ptID_old RNAseq methylation total_…¹
+##    &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;          &lt;dbl&gt;
+##  1 pt01_Media pt01  Media       12410 M     pt00001  TRUE   FALSE         9.11e6
+##  2 pt01_Mtb   pt01  Mtb         12410 M     pt00001  TRUE   FALSE         8.92e6
+##  3 pt02_Media pt02  Media       12775 M     pt00002  TRUE   FALSE         9.22e6
+##  4 pt02_Mtb   pt02  Mtb         12775 M     pt00002  TRUE   FALSE         7.73e6
+##  5 pt03_Media pt03  Media       11315 M     pt00003  TRUE   FALSE         6.23e6
+##  6 pt03_Mtb   pt03  Mtb         11315 M     pt00003  TRUE   FALSE         7.11e6
+##  7 pt04_Media pt04  Media        8395 M     pt00004  TRUE   TRUE          1.02e7
+##  8 pt04_Mtb   pt04  Mtb          8395 M     pt00004  TRUE   TRUE          8.41e6
+##  9 pt05_Media pt05  Media        7300 M     pt00005  TRUE   FALSE         1.55e7
+## 10 pt05_Mtb   pt05  Mtb          7300 M     pt00005  TRUE   FALSE         1.55e7
+## 11 pt06_Media pt06  Media        6570 F     pt00006  TRUE   FALSE         7.09e6
+## 12 pt06_Mtb   pt06  Mtb          6570 F     pt00006  TRUE   FALSE         6.59e6
+## 13 pt07_Media pt07  Media        7665 F     pt00007  TRUE   FALSE         1.07e7
+## 14 pt07_Mtb   pt07  Mtb          7665 F     pt00007  TRUE   FALSE         8.58e6
+## 15 pt08_Media pt08  Media        8760 M     pt00008  TRUE   FALSE         9.96e6
+## 16 pt08_Mtb   pt08  Mtb          8760 M     pt00008  TRUE   FALSE         8.22e6
+## 17 pt09_Media pt09  Media        6935 M     pt00009  TRUE   FALSE         1.31e7
+## 18 pt09_Mtb   pt09  Mtb          6935 M     pt00009  TRUE   FALSE         1.38e7
+## 19 pt10_Media pt10  Media        8030 F     pt00010  TRUE   FALSE         8.22e6
+## 20 pt10_Mtb   pt10  Mtb          8030 F     pt00010  TRUE   FALSE         7.60e6
+## # … with abbreviated variable name ¹​total_seq</code></pre>
 </div>
 <div id="summarize" class="section level3">
 <h3>summarize</h3>
@@ -1780,8 +1828,8 @@ can specify a name instead.</p>
 </div>
 <div id="pipes" class="section level3">
 <h3>pipes</h3>
-<p>Instead of including the data as an argument, we can use the <em>pipe
-operator</em> <code>%&gt;%</code> to pass the data value into the
+<p>Instead of including the data as an argument, we can use the pipe
+operator <code>%&gt;%</code> to pass the data value into the
 <code>summarize</code> function.</p>
 <pre class="r"><code>meta %&gt;% summarize(mean_age_dys = mean(age_dys))</code></pre>
 <pre><code>## # A tibble: 1 × 1
@@ -1790,11 +1838,10 @@ operator</em> <code>%&gt;%</code> to pass the data value into the
 ## 1        9016.</code></pre>
 <p>This line of code will do the exact same thing as our previous
 summary command, but the piping function tells R to use the
-<code>meta</code> data frame as the first argument in the next
-function.</p>
-<p>This lets us “chain” together multiple functions. The pipe
-(<code>%&gt;%</code>) takes the output from the left side and use it as
-input to the right side.</p>
+<code>meta</code> data frame as the first argument in the next function.
+This lets us “chain” together multiple functions into a pipeline. The
+pipe takes the output from the left side and use it as input to the
+right side.</p>
 <p>We can also add an <kdb>Enter</kdb> to make it look nicer:</p>
 <pre class="r"><code>meta %&gt;%
   summarize(mean_age_days = mean(age_dys))</code></pre>
@@ -1802,10 +1849,10 @@ input to the right side.</p>
 ##   mean_age_days
 ##           &lt;dbl&gt;
 ## 1         9016.</code></pre>
-<p>Using the <em>pipe operator</em> <code>%&gt;%</code> and enter
-command makes our code more readable. The <em>pipe operator</em>
-<code>%&gt;%</code> also helps to avoid using nested function and
-minimizes the need for new variables.</p>
+<p>Using the pipe operator <code>%&gt;%</code> and enter command makes
+our code more readable. The pipe operator <code>%&gt;%</code> also helps
+to avoid using nested function like <code>f(g(x))</code> and minimizes
+the need for new variables.</p>
 <p>Since we use the pipe operator so often, there is a keyboard shortcut
 for it in RStudio. You can press
 <kdb>Ctrl</kdb>+<kdb>Shift</kdb>+<kdb>M<kdb> on Windows or
@@ -1813,9 +1860,9 @@ for it in RStudio. You can press
 </div>
 <div id="group_by" class="section level3">
 <h3>group_by</h3>
-<p>The comes in handy with functions like <code>group_by</code>. If we
-want to calculate the mean age in days for males and females separately,
-we can use <code>group_by</code> before summarize:</p>
+<p>The pipe comes in handy with functions like <code>group_by</code>. If
+we want to calculate the mean age in days for males and females
+separately, we can use <code>group_by</code> before summarize:</p>
 <pre class="r"><code>meta %&gt;% 
   group_by(sex) %&gt;% 
   summarize(mean_age_days = mean(age_dys))</code></pre>
@@ -1826,7 +1873,7 @@ we can use <code>group_by</code> before summarize:</p>
 ## 2 M             9699.</code></pre>
 <p>And we could merge this with a filter to only look at the Media
 libraries, since each age is repeated for that patient’s Media and Mtb
-libraries. The results is the same in this case but filtering would be
+libraries. The results are the same in this case but filtering would be
 important if any of our patient’s were missing one of the
 conditions.</p>
 <pre class="r"><code>meta %&gt;% 
@@ -1847,66 +1894,68 @@ understand. Let’s add a column with age in years.</p>
 <pre class="r"><code>meta %&gt;% 
   mutate(age_yrs = age_dys / 365.25)</code></pre>
 <pre><code>## # A tibble: 20 × 10
-##    libID     ptID  condition age_dys sex   ptID_old RNAseq methylation total_seq
-##    &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;           &lt;dbl&gt;
-##  1 pt01_Med… pt01  Media       12410 M     pt00001  TRUE   FALSE        9114402.
-##  2 pt01_Mtb  pt01  Mtb         12410 M     pt00001  TRUE   FALSE        8918699.
-##  3 pt02_Med… pt02  Media       12775 M     pt00002  TRUE   FALSE        9221555.
-##  4 pt02_Mtb  pt02  Mtb         12775 M     pt00002  TRUE   FALSE        7733260.
-##  5 pt03_Med… pt03  Media       11315 M     pt00003  TRUE   FALSE        6231728.
-##  6 pt03_Mtb  pt03  Mtb         11315 M     pt00003  TRUE   FALSE        7105193.
-##  7 pt04_Med… pt04  Media        8395 M     pt00004  TRUE   TRUE        10205557.
-##  8 pt04_Mtb  pt04  Mtb          8395 M     pt00004  TRUE   TRUE         8413543.
-##  9 pt05_Med… pt05  Media        7300 M     pt00005  TRUE   FALSE       15536685.
-## 10 pt05_Mtb  pt05  Mtb          7300 M     pt00005  TRUE   FALSE       15509446.
-## 11 pt06_Med… pt06  Media        6570 F     pt00006  TRUE   FALSE        7085995.
-## 12 pt06_Mtb  pt06  Mtb          6570 F     pt00006  TRUE   FALSE        6588160.
-## 13 pt07_Med… pt07  Media        7665 F     pt00007  TRUE   FALSE       10706098.
-## 14 pt07_Mtb  pt07  Mtb          7665 F     pt00007  TRUE   FALSE        8576245.
-## 15 pt08_Med… pt08  Media        8760 M     pt00008  TRUE   FALSE        9957906.
-## 16 pt08_Mtb  pt08  Mtb          8760 M     pt00008  TRUE   FALSE        8220348.
-## 17 pt09_Med… pt09  Media        6935 M     pt00009  TRUE   FALSE       13055276 
-## 18 pt09_Mtb  pt09  Mtb          6935 M     pt00009  TRUE   FALSE       13800442.
-## 19 pt10_Med… pt10  Media        8030 F     pt00010  TRUE   FALSE        8216706.
-## 20 pt10_Mtb  pt10  Mtb          8030 F     pt00010  TRUE   FALSE        7599609.
-## # … with 1 more variable: age_yrs &lt;dbl&gt;</code></pre>
+##    libID      ptID  condi…¹ age_dys sex   ptID_…² RNAseq methy…³ total…⁴ age_yrs
+##    &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;     &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;   &lt;lgl&gt;  &lt;lgl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+##  1 pt01_Media pt01  Media     12410 M     pt00001 TRUE   FALSE    9.11e6    34.0
+##  2 pt01_Mtb   pt01  Mtb       12410 M     pt00001 TRUE   FALSE    8.92e6    34.0
+##  3 pt02_Media pt02  Media     12775 M     pt00002 TRUE   FALSE    9.22e6    35.0
+##  4 pt02_Mtb   pt02  Mtb       12775 M     pt00002 TRUE   FALSE    7.73e6    35.0
+##  5 pt03_Media pt03  Media     11315 M     pt00003 TRUE   FALSE    6.23e6    31.0
+##  6 pt03_Mtb   pt03  Mtb       11315 M     pt00003 TRUE   FALSE    7.11e6    31.0
+##  7 pt04_Media pt04  Media      8395 M     pt00004 TRUE   TRUE     1.02e7    23.0
+##  8 pt04_Mtb   pt04  Mtb        8395 M     pt00004 TRUE   TRUE     8.41e6    23.0
+##  9 pt05_Media pt05  Media      7300 M     pt00005 TRUE   FALSE    1.55e7    20.0
+## 10 pt05_Mtb   pt05  Mtb        7300 M     pt00005 TRUE   FALSE    1.55e7    20.0
+## 11 pt06_Media pt06  Media      6570 F     pt00006 TRUE   FALSE    7.09e6    18.0
+## 12 pt06_Mtb   pt06  Mtb        6570 F     pt00006 TRUE   FALSE    6.59e6    18.0
+## 13 pt07_Media pt07  Media      7665 F     pt00007 TRUE   FALSE    1.07e7    21.0
+## 14 pt07_Mtb   pt07  Mtb        7665 F     pt00007 TRUE   FALSE    8.58e6    21.0
+## 15 pt08_Media pt08  Media      8760 M     pt00008 TRUE   FALSE    9.96e6    24.0
+## 16 pt08_Mtb   pt08  Mtb        8760 M     pt00008 TRUE   FALSE    8.22e6    24.0
+## 17 pt09_Media pt09  Media      6935 M     pt00009 TRUE   FALSE    1.31e7    19.0
+## 18 pt09_Mtb   pt09  Mtb        6935 M     pt00009 TRUE   FALSE    1.38e7    19.0
+## 19 pt10_Media pt10  Media      8030 F     pt00010 TRUE   FALSE    8.22e6    22.0
+## 20 pt10_Mtb   pt10  Mtb        8030 F     pt00010 TRUE   FALSE    7.60e6    22.0
+## # … with abbreviated variable names ¹​condition, ²​ptID_old, ³​methylation,
+## #   ⁴​total_seq</code></pre>
 <p>Note that this new column is not saved in meta because we printed the
 result to the console and did not save it to the environment. We can
-overwrite the <code>meta</code> data frame so it will now contain the
+overwrite the <code>meta</code> data frame so it will now contains the
 <code>age_yrs</code> column.</p>
 <pre class="r"><code>meta &lt;- meta %&gt;% 
   mutate(age_yrs = age_dys / 365.25)
 meta</code></pre>
 <pre><code>## # A tibble: 20 × 10
-##    libID     ptID  condition age_dys sex   ptID_old RNAseq methylation total_seq
-##    &lt;chr&gt;     &lt;chr&gt; &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;           &lt;dbl&gt;
-##  1 pt01_Med… pt01  Media       12410 M     pt00001  TRUE   FALSE        9114402.
-##  2 pt01_Mtb  pt01  Mtb         12410 M     pt00001  TRUE   FALSE        8918699.
-##  3 pt02_Med… pt02  Media       12775 M     pt00002  TRUE   FALSE        9221555.
-##  4 pt02_Mtb  pt02  Mtb         12775 M     pt00002  TRUE   FALSE        7733260.
-##  5 pt03_Med… pt03  Media       11315 M     pt00003  TRUE   FALSE        6231728.
-##  6 pt03_Mtb  pt03  Mtb         11315 M     pt00003  TRUE   FALSE        7105193.
-##  7 pt04_Med… pt04  Media        8395 M     pt00004  TRUE   TRUE        10205557.
-##  8 pt04_Mtb  pt04  Mtb          8395 M     pt00004  TRUE   TRUE         8413543.
-##  9 pt05_Med… pt05  Media        7300 M     pt00005  TRUE   FALSE       15536685.
-## 10 pt05_Mtb  pt05  Mtb          7300 M     pt00005  TRUE   FALSE       15509446.
-## 11 pt06_Med… pt06  Media        6570 F     pt00006  TRUE   FALSE        7085995.
-## 12 pt06_Mtb  pt06  Mtb          6570 F     pt00006  TRUE   FALSE        6588160.
-## 13 pt07_Med… pt07  Media        7665 F     pt00007  TRUE   FALSE       10706098.
-## 14 pt07_Mtb  pt07  Mtb          7665 F     pt00007  TRUE   FALSE        8576245.
-## 15 pt08_Med… pt08  Media        8760 M     pt00008  TRUE   FALSE        9957906.
-## 16 pt08_Mtb  pt08  Mtb          8760 M     pt00008  TRUE   FALSE        8220348.
-## 17 pt09_Med… pt09  Media        6935 M     pt00009  TRUE   FALSE       13055276 
-## 18 pt09_Mtb  pt09  Mtb          6935 M     pt00009  TRUE   FALSE       13800442.
-## 19 pt10_Med… pt10  Media        8030 F     pt00010  TRUE   FALSE        8216706.
-## 20 pt10_Mtb  pt10  Mtb          8030 F     pt00010  TRUE   FALSE        7599609.
-## # … with 1 more variable: age_yrs &lt;dbl&gt;</code></pre>
+##    libID      ptID  condi…¹ age_dys sex   ptID_…² RNAseq methy…³ total…⁴ age_yrs
+##    &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;     &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;   &lt;lgl&gt;  &lt;lgl&gt;     &lt;dbl&gt;   &lt;dbl&gt;
+##  1 pt01_Media pt01  Media     12410 M     pt00001 TRUE   FALSE    9.11e6    34.0
+##  2 pt01_Mtb   pt01  Mtb       12410 M     pt00001 TRUE   FALSE    8.92e6    34.0
+##  3 pt02_Media pt02  Media     12775 M     pt00002 TRUE   FALSE    9.22e6    35.0
+##  4 pt02_Mtb   pt02  Mtb       12775 M     pt00002 TRUE   FALSE    7.73e6    35.0
+##  5 pt03_Media pt03  Media     11315 M     pt00003 TRUE   FALSE    6.23e6    31.0
+##  6 pt03_Mtb   pt03  Mtb       11315 M     pt00003 TRUE   FALSE    7.11e6    31.0
+##  7 pt04_Media pt04  Media      8395 M     pt00004 TRUE   TRUE     1.02e7    23.0
+##  8 pt04_Mtb   pt04  Mtb        8395 M     pt00004 TRUE   TRUE     8.41e6    23.0
+##  9 pt05_Media pt05  Media      7300 M     pt00005 TRUE   FALSE    1.55e7    20.0
+## 10 pt05_Mtb   pt05  Mtb        7300 M     pt00005 TRUE   FALSE    1.55e7    20.0
+## 11 pt06_Media pt06  Media      6570 F     pt00006 TRUE   FALSE    7.09e6    18.0
+## 12 pt06_Mtb   pt06  Mtb        6570 F     pt00006 TRUE   FALSE    6.59e6    18.0
+## 13 pt07_Media pt07  Media      7665 F     pt00007 TRUE   FALSE    1.07e7    21.0
+## 14 pt07_Mtb   pt07  Mtb        7665 F     pt00007 TRUE   FALSE    8.58e6    21.0
+## 15 pt08_Media pt08  Media      8760 M     pt00008 TRUE   FALSE    9.96e6    24.0
+## 16 pt08_Mtb   pt08  Mtb        8760 M     pt00008 TRUE   FALSE    8.22e6    24.0
+## 17 pt09_Media pt09  Media      6935 M     pt00009 TRUE   FALSE    1.31e7    19.0
+## 18 pt09_Mtb   pt09  Mtb        6935 M     pt00009 TRUE   FALSE    1.38e7    19.0
+## 19 pt10_Media pt10  Media      8030 F     pt00010 TRUE   FALSE    8.22e6    22.0
+## 20 pt10_Mtb   pt10  Mtb        8030 F     pt00010 TRUE   FALSE    7.60e6    22.0
+## # … with abbreviated variable names ¹​condition, ²​ptID_old, ³​methylation,
+## #   ⁴​total_seq</code></pre>
 </div>
 <div id="exercises-dplyr" class="section level3">
 <h3>Exercises: dplyr</h3>
 <ol style="list-style-type: decimal">
-<li>Create a new column <code>total_seq_millions</code> based on
-<code>total_seq</code>.</li>
+<li>Create a new column for total sequences in million
+<code>total_seq_millions</code> based on <code>total_seq</code>.</li>
 <li>What is another way to end up with only the Media rows instead of
 <code>condition == &quot;Media&quot;</code>?</li>
 <li>Try calculating the mean total number of sequences for the Media and
@@ -1916,6 +1965,11 @@ Mtb conditions.</li>
 </div>
 <div id="intro-tidyr" class="section level2">
 <h2>Intro tidyr</h2>
+<p><code>tidyr</code> is another data manipulation package in
+<code>tidyverse</code>. It contains functions for tidying data and
+generally acts on the entire data frame, as opposed to
+<code>dplyr</code> which most often works on a subset of columns or
+rows.</p>
 <div id="pivot" class="section level3">
 <h3>pivot</h3>
 <p>Data comes in many shapes and sizes, and one way we classify data is
@@ -1940,10 +1994,11 @@ make it easy to switch between the two formats.</p>
 conditions is the <code>libID</code> column (which is redundant with the
 <code>ptID</code> and <code>condition</code>) and the
 <code>total_seq</code> column. We can take the condition column and
-create two new columns, one with the total seqs in the media sample and
-one with the total seqs in the mtb sample. This is called “pivoting” the
-data frame “wider” because we rearrange it by creating an additional
-column and making it have fewer rows. Let’s try it!</p>
+create two new columns, one with the total seqs in the
+<code>Media</code> sample and one with the total seqs in the
+<code>Mtb</code> sample. This is called “pivoting” the data frame
+“wider” because we rearrange it by creating an additional column and
+making it have fewer rows. Let’s try it!</p>
 <pre class="r"><code>meta %&gt;% 
   select(-libID) %&gt;% 
   pivot_wider(names_from = condition, values_from = total_seq)</code></pre>
@@ -1960,56 +2015,53 @@ column and making it have fewer rows. Let’s try it!</p>
 ##  8 pt08     8760 M     pt00008  TRUE   FALSE          24.0  9957906.  8220348.
 ##  9 pt09     6935 M     pt00009  TRUE   FALSE          19.0 13055276  13800442.
 ## 10 pt10     8030 F     pt00010  TRUE   FALSE          22.0  8216706.  7599609.</code></pre>
-<p>Notice here that we tell <code>pivot_wider()</code> which columns to
-pull the names we wish our new columns to be named from the year
-variable, and the values to populate those columns from the condition
-variable. (Again, neither of which have to be in quotes in the code when
-there are no special characters or spaces - certainly an incentive not
-to use special characters or spaces!) We see that the resulting table
-has new columns by year, and the values populate it with our remaining
-variables dictating the rows.</p>
-<p>Maybe we should assign those columns more informative names:</p>
+<p>Notice here that we tell <code>pivot_wider</code> which columns to
+pull the names we wish our new columns to be named from the
+<code>condition</code> variable, and the values to populate those
+columns from the <code>total_seq</code> variable. (Again, neither of
+which have to be in quotes in the code when there are no special
+characters or spaces - certainly an incentive not to use special
+characters or spaces!) We see that the resulting table has new columns
+by condition, and the values populate it with our remaining variables
+dictating the rows.</p>
+<p>Maybe we should assign those columns more informative names.</p>
 <pre class="r"><code>meta %&gt;% 
   select(-libID) %&gt;% 
   pivot_wider(names_from = condition, values_from = total_seq,
               names_prefix = &quot;total_seq_&quot;)</code></pre>
 <pre><code>## # A tibble: 10 × 9
-##    ptID  age_dys sex   ptID_old RNAseq methylation age_yrs total_seq_Media
-##    &lt;chr&gt;   &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;         &lt;dbl&gt;           &lt;dbl&gt;
-##  1 pt01    12410 M     pt00001  TRUE   FALSE          34.0        9114402.
-##  2 pt02    12775 M     pt00002  TRUE   FALSE          35.0        9221555.
-##  3 pt03    11315 M     pt00003  TRUE   FALSE          31.0        6231728.
-##  4 pt04     8395 M     pt00004  TRUE   TRUE           23.0       10205557.
-##  5 pt05     7300 M     pt00005  TRUE   FALSE          20.0       15536685.
-##  6 pt06     6570 F     pt00006  TRUE   FALSE          18.0        7085995.
-##  7 pt07     7665 F     pt00007  TRUE   FALSE          21.0       10706098.
-##  8 pt08     8760 M     pt00008  TRUE   FALSE          24.0        9957906.
-##  9 pt09     6935 M     pt00009  TRUE   FALSE          19.0       13055276 
-## 10 pt10     8030 F     pt00010  TRUE   FALSE          22.0        8216706.
-## # … with 1 more variable: total_seq_Mtb &lt;dbl&gt;</code></pre>
-<p>And now let’s save the new wider metadata to a new variable:</p>
+##    ptID  age_dys sex   ptID_old RNAseq methylation age_yrs total_seq_M…¹ total…²
+##    &lt;chr&gt;   &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;         &lt;dbl&gt;         &lt;dbl&gt;   &lt;dbl&gt;
+##  1 pt01    12410 M     pt00001  TRUE   FALSE          34.0      9114402.  8.92e6
+##  2 pt02    12775 M     pt00002  TRUE   FALSE          35.0      9221555.  7.73e6
+##  3 pt03    11315 M     pt00003  TRUE   FALSE          31.0      6231728.  7.11e6
+##  4 pt04     8395 M     pt00004  TRUE   TRUE           23.0     10205557.  8.41e6
+##  5 pt05     7300 M     pt00005  TRUE   FALSE          20.0     15536685.  1.55e7
+##  6 pt06     6570 F     pt00006  TRUE   FALSE          18.0      7085995.  6.59e6
+##  7 pt07     7665 F     pt00007  TRUE   FALSE          21.0     10706098.  8.58e6
+##  8 pt08     8760 M     pt00008  TRUE   FALSE          24.0      9957906.  8.22e6
+##  9 pt09     6935 M     pt00009  TRUE   FALSE          19.0     13055276   1.38e7
+## 10 pt10     8030 F     pt00010  TRUE   FALSE          22.0      8216706.  7.60e6
+## # … with abbreviated variable names ¹​total_seq_Media, ²​total_seq_Mtb</code></pre>
+<p>And now let’s save the new wider metadata to a new object.</p>
 <pre class="r"><code>meta_wide &lt;- meta %&gt;% 
   select(-libID) %&gt;% 
   pivot_wider(names_from = condition, values_from = total_seq)</code></pre>
-<p>Notice that the number of rows and columns has changed:</p>
-<pre class="r"><code>nrow(meta)</code></pre>
-<pre><code>## [1] 20</code></pre>
-<pre class="r"><code>ncol(meta)</code></pre>
-<pre><code>## [1] 10</code></pre>
-<pre class="r"><code>nrow(meta_wide)</code></pre>
-<pre><code>## [1] 10</code></pre>
-<pre class="r"><code>ncol(meta_wide)</code></pre>
-<pre><code>## [1] 9</code></pre>
+<p>Notice that the number of rows and columns has changed.</p>
+<pre class="r"><code>dim(meta)</code></pre>
+<pre><code>## [1] 20 10</code></pre>
+<pre class="r"><code>dim(meta_wide)</code></pre>
+<pre><code>## [1] 10  9</code></pre>
 </div>
 <div id="pivot_longer" class="section level4">
 <h4>pivot_longer</h4>
 <p>Everything we did with <code>pivot_wider</code>, we can reverse with
 <code>pivot_longer</code>. Maybe you receive a data frame in a wide
 format, but you need it in a long format. Here’s how we can get back to
-a long data frame:</p>
+a long data frame.</p>
 <pre class="r"><code>meta_wide %&gt;% 
   pivot_longer(c(Media, Mtb), 
-               names_to = &#39;condition&#39;, values_to = &#39;total_seq&#39;)</code></pre>
+               names_to = &quot;condition&quot;, values_to = &quot;total_seq&quot;)</code></pre>
 <pre><code>## # A tibble: 20 × 9
 ##    ptID  age_dys sex   ptID_old RNAseq methylation age_yrs condition total_seq
 ##    &lt;chr&gt;   &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;    &lt;lgl&gt;  &lt;lgl&gt;         &lt;dbl&gt; &lt;chr&gt;         &lt;dbl&gt;
@@ -2033,6 +2085,18 @@ a long data frame:</p>
 ## 18 pt09     6935 M     pt00009  TRUE   FALSE          19.0 Mtb       13800442.
 ## 19 pt10     8030 F     pt00010  TRUE   FALSE          22.0 Media      8216706.
 ## 20 pt10     8030 F     pt00010  TRUE   FALSE          22.0 Mtb        7599609.</code></pre>
+<p>In the above case, the condition and total_seq names need to be in
+quotes because they are not yet in our data object. They are instead
+just characters used to name the new columns. If we forgot the quotes,
+we’d get an error because R cannot find a <code>condition</code> column
+in <code>meta_wide</code> as no such column exists.</p>
+<pre class="r"><code>meta_wide %&gt;% 
+  pivot_longer(c(Media, Mtb), 
+               names_to = condition, values_to = &quot;total_seq&quot;)</code></pre>
+<pre><code>## Error in build_longer_spec(data, !!cols, names_to = names_to, values_to = values_to, : object &#39;condition&#39; not found</code></pre>
+<pre class="r"><code>colnames(meta_wide)</code></pre>
+<pre><code>## [1] &quot;ptID&quot;        &quot;age_dys&quot;     &quot;sex&quot;         &quot;ptID_old&quot;    &quot;RNAseq&quot;     
+## [6] &quot;methylation&quot; &quot;age_yrs&quot;     &quot;Media&quot;       &quot;Mtb&quot;</code></pre>
 </div>
 </div>
 </div>
@@ -2041,9 +2105,9 @@ a long data frame:</p>
 <div id="join" class="section level3">
 <h3>join</h3>
 <p>Often not all your data is pre-compiled in one nice, tidy data frame.
-You may have multiple files, batches, etc to work with. dplyr’s join
-functions allow use to combined data frame without fear of copy-paste
-errors or missing anything!</p>
+You may have multiple files, batches, etc to work with.
+<code>dplyr</code>’s join functions allow us to combine data frames
+without fear of copy-paste errors or missing anything!</p>
 <p>So far, we’ve been working with just the metadata - a single data
 frame. Let’s adventure into the full RNA-seq <code>dat</code> object so
 we have multiple data frames to combine.</p>
@@ -2070,9 +2134,10 @@ the <code>targets</code> data.</p>
 <p>Looking at these two data frames, they do not share any columns -
 thus there is nothing to join them with. However, notice that the column
 names in the counts data are the libIDs from the metadata! We can use
-pivot to get the joining column we need.</p>
-<p>Notice that since <code>E</code> is a matrix with rownames, we must
-force it to be a data frame and move the rownames into a dat column.</p>
+<code>pivot_longer</code> to get the joining column we need.</p>
+<p>Since <code>E</code> is a matrix with rownames, we must force it to
+be a data frame and move the rownames into a data column with some
+additional functions.</p>
 <pre class="r"><code>E_long &lt;- as.data.frame(dat$E) %&gt;% 
   rownames_to_column(&quot;gene&quot;) %&gt;% 
   pivot_longer(-gene, names_to = &quot;libID&quot;, values_to = &quot;log2CPM&quot;)
@@ -2091,7 +2156,8 @@ E_long</code></pre>
 ##  8 A1BG  pt04_Mtb   -0.264 
 ##  9 A1BG  pt05_Media  1.63  
 ## 10 A1BG  pt05_Mtb   -0.0305
-## # … with 268,370 more rows</code></pre>
+## # … with 268,370 more rows
+## # ℹ Use `print(n = ...)` to see more rows</code></pre>
 <p>Now both data frames have a <code>libID</code> column!</p>
 <p>Let’s combine our sequence counts with our metadata. To combine two
 data frames, we will use a <code>join</code> function. The dplyr package
@@ -2099,18 +2165,23 @@ has a number of tools for joining data frames together depending on what
 we want to do with the rows of the data of countries that are not
 represented in both data frames.</p>
 <p><code>?join</code></p>
-<p>We have a few options here:</p>
-<blockquote>
-<p>The mutating joins add columns from y to x, matching rows based on
-the keys: - inner_join(): includes all rows in x and y. - left_join():
-includes all rows in x. - right_join(): includes all rows in y. -
-full_join(): includes all rows in x or y.</p>
-</blockquote>
-<p>In an “inner join”, the new data frame only has those rows where the
-same key is found in both data frames. This is a very commonly used
-join.</p>
+<p>The most common joins are:</p>
+<ul>
+<li><code>inner_join</code>: includes all rows present in BOTH data
+frames</li>
+<li><code>left_join</code>: includes all rows in the first/left data
+frame. Remove rows ONLY present in the second/right data frame</li>
+<li><code>right_join</code>: includes all rows in the second/right data
+frame. Remove rows ONLY present in the first/left data frame</li>
+<li><code>full_join</code>: includes all rows present in EITHER data
+frame. Fills in rows only present in one data frame with NA in the
+other</li>
+</ul>
+<p>Here, we use <code>inner_join</code> to keep only libraries with both
+expression data and metadata, which is actually all of them.</p>
 <p><img src="data:image/png;base64,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" width="400" /></p>
 <pre class="r"><code>full_data &lt;- inner_join(meta, E_long, by = &#39;libID&#39;)</code></pre>
+<p>I find this page helpful when working with joins. <a href="https://stat545.com/join-cheatsheet.html" class="uri">https://stat545.com/join-cheatsheet.html</a></p>
 </div>
 <div id="exercises-pivot-and-join" class="section level3">
 <h3>Exercises: pivot and join</h3>
@@ -2121,7 +2192,6 @@ it</em>, outline what the data would look like if you
 with metadata containing only Media samples.</li>
 <li>Similarly, what would happen with <code>full_join</code>?</li>
 </ol>
-<p>I find this page helpful when working with joins. <a href="https://stat545.com/join-cheatsheet.html" class="uri">https://stat545.com/join-cheatsheet.html</a></p>
 </div>
 </div>
 </div>

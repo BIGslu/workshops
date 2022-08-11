@@ -1517,7 +1517,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Setup and installation</h1>
 <h4 class="author">Kim Dill-McFarland</h4>
-<h4 class="date">version July 28, 2022</h4>
+<h4 class="date">version August 01, 2022</h4>
 
 </div>
 
@@ -1526,10 +1526,11 @@ div.tocify {
 <h1>Prior to the workshop, please complete the following:</h1>
 <div id="download-the-data" class="section level2">
 <h2>Download the data</h2>
-<p>Please download the data in <a href="https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/data/data.zip">data.zip</a>.
+<p>Please download the data in <a href="https://github.com/BIGslu/workshops/raw/main/2022.08.15_R.tidyverse.workshop/data/data.zip">data.zip</a>.
 Then, move data.zip to your Desktop and unzip it (usually
 double-clicking it will work).</p>
-<p>All workshop material and data are available at <a href="https://github.com/BIGslu/workshops/tree/main/2022.08.15_R.tidyverse.workshop" class="uri">https://github.com/BIGslu/workshops/tree/main/2022.08.15_R.tidyverse.workshop</a>.</p>
+<p>If the above link does not work, please try downloading the data with
+Download button at <a href="https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/data/data.zip" class="uri">https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/data/data.zip</a>.</p>
 </div>
 <div id="install-r-and-rstudio" class="section level2">
 <h2>Install R and RStudio</h2>
@@ -1551,9 +1552,14 @@ If you see only 1 panel, then you’re likely in R, not RStudio.</p>
 (left panel in the above image).</p>
 <pre class="r"><code>#CRAN packages
 install.packages(&quot;tidyverse&quot;)
+install.packages(&quot;ggrepel&quot;)
 #Bioconductor packages
 install.packages(&quot;BiocManager&quot;)
 BiocManager::install(&quot;limma&quot;)</code></pre>
+<p><em>If prompted</em>, say <code>a</code> to “Update all/some/none?
+[a/s/n]” and <code>no</code> to “Do you want to install from sources the
+packages which need compilation? (Yes/no/cancel)”</p>
+<p><strong>This can take several minutes.</strong></p>
 </div>
 <div id="check-r-package-install" class="section level2">
 <h2>Check R package install</h2>
@@ -1563,16 +1569,17 @@ minutes early to the workshop the day of or contact Kim for
 assistance.</strong></p>
 <p>First, the package(s) that give messages upon loading.</p>
 <pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──</code></pre>
-<pre><code>## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
-## ✔ tibble  3.1.7     ✔ dplyr   1.0.9
+<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
+## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
+## ✔ tibble  3.1.8     ✔ dplyr   1.0.9
 ## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
-## ✔ readr   2.1.2     ✔ forcats 0.5.1</code></pre>
-<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✔ readr   2.1.2     ✔ forcats 0.5.1
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()</code></pre>
 <p>Then, check package(s) that load silently with no messages.</p>
-<pre class="r"><code>library(limma)</code></pre>
+<pre class="r"><code>library(limma)
+library(ggrepel)</code></pre>
 <div id="r-package-versions" class="section level4">
 <h4>R package versions</h4>
 <p>For reproducibility, here is the complete list of software used in
@@ -1593,25 +1600,31 @@ this workshop.</p>
 ## [1] stats     graphics  grDevices utils     datasets  methods   base     
 ## 
 ## other attached packages:
-##  [1] limma_3.52.2    forcats_0.5.1   stringr_1.4.0   dplyr_1.0.9    
-##  [5] purrr_0.3.4     readr_2.1.2     tidyr_1.2.0     tibble_3.1.7   
-##  [9] ggplot2_3.3.6   tidyverse_1.3.1
+##  [1] ggrepel_0.9.1   limma_3.52.2    forcats_0.5.1   stringr_1.4.0  
+##  [5] dplyr_1.0.9     purrr_0.3.4     readr_2.1.2     tidyr_1.2.0    
+##  [9] tibble_3.1.8    ggplot2_3.3.6   tidyverse_1.3.2
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] tidyselect_1.1.2 xfun_0.31        bslib_0.3.1      haven_2.5.0     
-##  [5] colorspace_2.0-3 vctrs_0.4.1      generics_0.1.3   htmltools_0.5.2 
-##  [9] yaml_2.3.5       utf8_1.2.2       rlang_1.0.4      jquerylib_0.1.4 
-## [13] pillar_1.7.0     withr_2.5.0      glue_1.6.2       DBI_1.1.3       
-## [17] dbplyr_2.2.1     modelr_0.1.8     readxl_1.4.0     lifecycle_1.0.1 
-## [21] cellranger_1.1.0 munsell_0.5.0    gtable_0.3.0     rvest_1.0.2     
-## [25] evaluate_0.15    knitr_1.39       tzdb_0.3.0       fastmap_1.1.0   
-## [29] fansi_1.0.3      broom_1.0.0      backports_1.4.1  scales_1.2.0    
-## [33] jsonlite_1.8.0   fs_1.5.2         hms_1.1.1        digest_0.6.29   
-## [37] stringi_1.7.8    rprojroot_2.0.3  grid_4.2.1       cli_3.3.0       
-## [41] tools_4.2.1      magrittr_2.0.3   sass_0.4.1       crayon_1.5.1    
-## [45] pkgconfig_2.0.3  ellipsis_0.3.2   xml2_1.3.3       reprex_2.0.1    
-## [49] lubridate_1.8.0  assertthat_0.2.1 rmarkdown_2.14   httr_1.4.3      
-## [53] rstudioapi_0.13  R6_2.5.1         compiler_4.2.1</code></pre>
+##  [1] Rcpp_1.0.9          lubridate_1.8.0     assertthat_0.2.1   
+##  [4] rprojroot_2.0.3     digest_0.6.29       utf8_1.2.2         
+##  [7] R6_2.5.1            cellranger_1.1.0    backports_1.4.1    
+## [10] reprex_2.0.1        evaluate_0.15       httr_1.4.3         
+## [13] pillar_1.8.0        rlang_1.0.4         googlesheets4_1.0.0
+## [16] readxl_1.4.0        rstudioapi_0.13     jquerylib_0.1.4    
+## [19] rmarkdown_2.14      googledrive_2.0.0   munsell_0.5.0      
+## [22] broom_1.0.0         compiler_4.2.1      modelr_0.1.8       
+## [25] xfun_0.31           pkgconfig_2.0.3     htmltools_0.5.3    
+## [28] tidyselect_1.1.2    fansi_1.0.3         crayon_1.5.1       
+## [31] tzdb_0.3.0          dbplyr_2.2.1        withr_2.5.0        
+## [34] grid_4.2.1          jsonlite_1.8.0      gtable_0.3.0       
+## [37] lifecycle_1.0.1     DBI_1.1.3           magrittr_2.0.3     
+## [40] scales_1.2.0        cli_3.3.0           stringi_1.7.8      
+## [43] cachem_1.0.6        fs_1.5.2            xml2_1.3.3         
+## [46] bslib_0.4.0         ellipsis_0.3.2      generics_0.1.3     
+## [49] vctrs_0.4.1         tools_4.2.1         glue_1.6.2         
+## [52] hms_1.1.1           fastmap_1.1.0       yaml_2.3.5         
+## [55] colorspace_2.0-3    gargle_1.2.0        rvest_1.0.2        
+## [58] knitr_1.39          haven_2.5.0         sass_0.4.2</code></pre>
 </div>
 </div>
 </div>

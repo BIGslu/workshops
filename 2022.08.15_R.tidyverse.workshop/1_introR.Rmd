@@ -29,9 +29,6 @@ We will do all of our work in [RStudio](https://www.rstudio.com/). RStudio is an
 
 During the workshop, we will build an R script together, which will be posted as 'live_notes' after the workshop at <https://github.com/BIGslu/workshops/tree/main/2022.08.15_R.tidyverse.workshop/live_notes>
 
-## Prior to the workshop
-Please [install R](http://www.r-project.org) and [RStudio](https://www.rstudio.com/products/rstudio/download/). See the [setup instructions][lesson0] for more details.
-
 ## A Tour of RStudio
 When you start RStudio, you will see something like the following window appear:
 
@@ -39,11 +36,11 @@ When you start RStudio, you will see something like the following window appear:
 
 Notice that the window is divided into three "panes":
 
-- Console (the entire left side): this is your view into the R engine. You can type in R commands here and see the output printed by R. (To make it easier to tell them apart, your input is printed in blue, while the output is black.) There are several editing conveniences available: use up and down arrow keys to go back to previously entered commands, which can then be edited and re-run; TAB for completing the name before the cursor; see more in [online docs](http://www.rstudio.com/ide/docs/using/keyboard_shortcuts).
+- Console (the entire left side): This is your view into the R engine. You can type in R commands here and see the output printed by R. (To make it easier to tell them apart, your input and the resulting output are printed in different colors.) There are several editing conveniences available: use up and down arrow keys to go back to previously entered commands, which can then be edited and re-run; TAB for completing the name before the cursor; see more in [online docs](http://www.rstudio.com/ide/docs/using/keyboard_shortcuts).
 
-- Environment/History (tabbed in upper right): view current user-defined objects and previously-entered commands, respectively.
+- Environment/History (tabbed in upper right): View current user-defined objects and previously-entered commands, respectively. The instructor may have additional tabs like Connection, Git, etc. These are not relevant to this workshop series.
 
-- Files/Plots/Packages/Help (tabbed in lower right): as their names suggest, these are used to view the contents of the current directory, graphics created by the user, install packages, and view the built-in help pages.
+- Files/Plots/Packages/Help (tabbed in lower right): As their names suggest, these are used to view the contents of the current directory, graphics created by the user, install packages, and view the built-in help pages.
 
 To change the look of RStudio, you can go to Tools -> Global Options -> Appearance and select colors, font size, etc. If you plan to be working for longer periods, we suggest choosing a dark background color scheme to save your computer battery and your eyes.
 
@@ -62,7 +59,7 @@ You can either create a project in an existing directory or make a new directory
 
 After your project is created, navigate to its directory using your Finder/File explorer. You will see the `.RProj` file has been created. 
 
-To access this project in the future, simply double-click the `RProj` and RStudio will open the project or choose File > Open Project from within an already open RStudio window.
+To access this project in the future, simply double-click the `.RProj` file and RStudio will open the project or choose File > Open Project from within an already open RStudio window.
 
 ### R Scripts
 
@@ -71,7 +68,7 @@ R script files are the primary way in which R facilitates reproducible research.
 Generally, if you are testing an operation (*e.g.* what would my data look like if I applied a log-transformation to it?), 
 you should do it in the console (left pane of RStudio). If you are committing a step to your analysis (*e.g.* I want to apply a log-transformation to my data and then conduct the rest of my analyses on the log-transformed data), you should add it to your R script so that it is saved for future use. 
 
-Additionally, you should annotate your R scripts with comments. In each line of code, any text preceded by the `#` symbol will not execute. Comments can be useful to remind yourself and to tell other readers what a specific chunk of code does. 
+Additionally, you should annotate your R scripts with comments. In each line of code, any text preceded by the `#` symbol will not execute. Comments can be useful to remind yourself and to tell other readers what a specific chunk of code does. In my experience, there can never be too much commenting.
 
 Let's create an R script (File > New File > R Script) and save it as `introR_live_notes.R` in your main project directory. If you again look to the project directory on your computer, you will see `introR_live_notes.R` is now saved there.
 
@@ -80,30 +77,35 @@ We will work together to create and populate the `introR_live_notes.R` script th
 ### R packages
 #### CRAN
 
-R packages are units of shareable code, containing functions that facilitate and enhance analyses. Let's install `tidyverse`, which is actually a meta-package containing several packages useful in data manipulation and plotting. Packages are typically installed from [CRAN](https://www.r-project.org/) (The Comprehensive R Archive Network), which is a database containing R itself as well as many R packages. Any package can be installed from CRAN using the `install.packages` function. You can input this into your console (as opposed to `live_notes.R`) since once a package is installed on your computer, you won't need to re-install it again.
+R packages are units of shareable code, containing functions that facilitate and enhance analyses. Packages are typically installed from [CRAN](https://www.r-project.org/) (The Comprehensive R Archive Network), which is a database containing R itself as well as many R packages. Any package can be installed from CRAN using the `install.packages` function. You should input installation commands into your console (as opposed to `live_notes.R`) since once a package is installed on your computer, you won't need to re-install it again.
+
+You should have installed the following packages prior to the workshop. However, if you did not, here is the code again. `tidyverse` is a meta-package containing several packages useful in data manipulation and plotting. `ggrepel` contains functions to modify `ggplot` plots.
+
+You **DO NOT** need to run this again if you did so as part of the setup instructions. 
 
 ```{r eval=FALSE}
-install.packages("tidyverse", Ncpus=2)
+install.packages("tidyverse")
+install.packages("ggrepel")
 ```
 
-**This can take several minutes.**
-
-After installing a package, and *every time* you open a new RStudio session, the packages you want to use need to be loaded into the R workspace with the `library` function. This tells R to access the package's functions and prevents RStudio from lags that would occur if it automatically loaded every downloaded package every time you opened it.
+After installing a package, and *every time* you open a new RStudio session, the packages you want to use need to be loaded into the R workspace with the `library` function. This tells R to access the package's functions and prevents RStudio from lags that would occur if it automatically loaded every downloaded package every time you opened it. To put this in perspective, I had `r length(installed.packages(.Library, priority = "high"))` packages installed at the time this document was made.
 
 ```{r}
 # Data manipulation and visualization
 library(tidyverse)
 ```
 
+Because `tidyverse` is a meta-package, it automatically tells you want packages it is loading and their versions. In addition, the Conflicts section let's you know  functions in the `tidyverse` that alter exist in your R session. Because you chose to load the package, calling the function `filter` will use the `tidyverse` function not the `stats` function (which comes with base R). If you for some reason needed the `stats` version, you can specify it with `package::` like `stats::filter`.
+
 #### Bioconductor
 
-[Bioconductor](https://www.bioconductor.org/) is another repository of R packages. It has different requirements for upload and houses many of the biology-relevant packages. To install from Bioconductor, you first install its installer from CRAN.
+[Bioconductor](https://www.bioconductor.org/) is another repository of R packages. It has different requirements for upload and houses many biology-relevant packages. To install from Bioconductor, you first install its installer from CRAN.
 
 ```{r eval=FALSE}
 install.packages("BiocManager")
 ```
 
-Then install your package of choice using it's installer. Here, we install `limma`, a package for analysis of microarray and RNA-seq data.
+Then install your package of choice using the `BiocManager` installer. Again, you did this in the setup instructions but the code is here again for reference. We install `limma`, a package for analysis of microarray and RNA-seq data.
 
 *If prompted*, say `a` to "Update all/some/none? [a/s/n]" and `no` to "Do you want to install from sources the packages which need compilation? (Yes/no/cancel)"
 
@@ -115,20 +117,22 @@ BiocManager::install("limma")
 
 Before doing anything in R, it is a good idea to set your random seed. Your analyses may not end up using a seed but by setting it, you ensure that *everything* is exactly reproducible.
 
+The most common seeds are 0, 1, 123, and 42. You can use any number and change it up between scripts if you'd like.
+
 ```{r}
 set.seed(4389)
 ```
 
 ### Organize data
 
-Create a directory *inside* your project directory called `data` and move the data files into this directory.
+Create a directory *inside* your project directory called `data` and move the data files into this directory. You can do this in your regular point-and-click file explorer.
 
 ### Loading data into R
 ### Data frames from `.csv`, `.tsv`, etc.
 
 One of R's most essential data structures is the data frame, which is simply a table of `m` columns by `n` rows. First, we will read in the RNA-seq metadata into RStudio using the base R `read.table` function.
 
-Each R function follows the following basic syntax, where `Function` is the name of the function.
+Each R function uses the following basic syntax, where `Function` is the name of the function.
 
 ```
 Function(argument1=..., argument2=..., ...)
@@ -144,8 +148,7 @@ We will store the data as an *object* named `meta` using the assignment operator
 
 ```{r}
 # read the data and save it as an object
-meta <- read.table(file="data/metadata.csv", 
-                  sep=",", header=TRUE)
+meta <- read.table(file="data/metadata.csv", sep=",", header=TRUE)
 ```
 
 Now whenever we want to use these data, we simply call `meta`
@@ -175,12 +178,6 @@ load("data/dat_voom.RData")
 
 Notice that these data appear already named in your R environment as `dat`. Object names are determined when saving so be sure to create short but descriptive names before saving to `.RData`.
 
-See the objects data type with `class`.
-
-```{r}
-class(dat)
-```
-
 ## Data types
 ### Simple
 
@@ -194,32 +191,42 @@ Each column and each row of a data frame are individual R vectors. R vectors are
 
 ```{r}
 # Extract patient IDs
-meta$FULLIDNO
+meta$ptID
 ```
 
-R objects have several different classes (types). Our data frame contains 2 R data types. The base R `class` function will tell you what data type an object is.
+R objects have several different classes (types). Our data frame contains 4 R data types. The base R `class` function will tell you what data type an object is.
 
 ```{r}
 class(meta)
-class(meta$libID)
-class(meta$lib.size)
+class(meta$ptID)
+class(meta$age_dys)
+class(meta$total_seq)
+class(meta$RNAseq)
 ```
 
-We see that our `libID` column is `character`, meaning it is non-numeric. On the other hand, `lib.size` is `numeric`, meaning a number.
+We see that our `ptID` column is `character`, meaning it is non-numeric letters and characters. On the other hand, `age_dys` is `numeric`, meaning a number, and `total_seq` is `integer`, meaning a whole number with no decimals. Finally, `RNAseq` is `logical` meaning TRUE/FALSE - which need to be all caps for R to recognize them as such.
 
-Common data types not found in these data include the following. We will see these later on.
+You can see the entire structure of the data with `str`.
 
-* `factor`: non-numeric value with a set number of unique levels
-* `integer`: whole number numeric
-* `logical`: TRUE/FALSE designation
+```{r}
+str(meta)
+```
+
+Another, common data type not found in these data is `factor`, non-numeric value with a set number of unique levels. We will see `factor` in the `ggplot` section.
 
 ### Complex (`S3`, `S4`)
 
-Now, let's look at the `limma EList` data. These data are in `S3` format meaning they have 3 dimensions. In essence, they are a list of multiple data frames and vectors. If you click on the `dat` object in your Environment tab, you will see multiple pieces.
+Now, let's look at the `dat` data. These data are in `S3` format meaning they have 3 dimensions. `S3` data are a list of multiple data frames, vectors, plots, etc. In the case of `dat`, there are a specific class from the `limma` package called `EList` for expression list. 
 
-![](images/S3_obj.png){width=50%}
+```{r}
+class(dat)
+```
 
-In these data, pieces are data frames or matrices. You can again see this with `class` only this time you specify a part of the `dat` object with `$`
+If you click on the `dat` object in your Environment tab, you will see multiple pieces.
+
+![](images/S3_obj.png)
+
+In these data, pieces are data frames or matrices. You can again see this with `class`, only this time you specify a part of the `dat` object with `$`
 
 ```{r}
 class(dat$genes)
@@ -266,23 +273,23 @@ mean(meta$libID)
 
 ### Subsetting vectors and data frames
 
-Since vectors are 1D arrays of a defined length, their individual values can be retrieved using vector indices. R uses 1-based indexing, meaning the first value in an R vector corresponds to the index 1. (Importantly, if you use python, that language is 0-based, meaning the first value is index 0.) Each subsequent element increases the index by 1. For example, we can extract the value of the 5th element of the `libID` vector using the square bracket operator `[ ]` like so.
+Since vectors are one dimensional arrays of a defined length, their individual values can be retrieved using vector indices. R uses 1-based indexing, meaning the first value in an R vector corresponds to the index 1. (Importantly, if you use python, that language is 0-based, meaning the first value is index 0.) Each subsequent element increases the index by 1. For example, we can extract the value of the 5th element of the `libID` vector using the square bracket operator `[ ]` like so.
 
 ```{r}
 meta$libID[5]
 ```
 
-In contrast, data frames are 2D arrays so indexing is done across both dimensions as `[rows, columns]`. So, we can extract the same oxygen value directly from the data frame knowing it is in the 5th row and 1st column.
+In contrast, data frames are two dimensional arrays so indexing is done across both dimensions as `[rows, columns]`. So, we can extract the same library ID value directly from the data frame knowing it is in the 5th row and 1st column.
 
 ```{r}
 meta[5, 1]
 ```
 
-The square bracket operator is often used with logical vectors (TRUE/FALSE) to subset data. For example, we can subset our metadata to all `MEDIA` observations (rows).
+The square bracket operator is often used with logical vectors (TRUE/FALSE) to subset data. For example, we can subset our metadata to all `Media` observations (rows).
 
 ```{r}
-# Create logical vector for which lib.size values are > 10 million
-logical.vector <- meta$condition == "MEDIA"
+# Create logical vector for which condition is Media
+logical.vector <- meta$condition == "Media"
 #View vector
 logical.vector
 #Apply vector to data frame to select only observations where the logical vector is TRUE
@@ -314,11 +321,11 @@ Statement | Meaning
 
 Using the `meta` data frame:
 
-2. Using an R function, determine what data type the `norm.factors` variable is.
+2. Using an R function, determine what data type the `ptID_old` variable is.
 3. Using indexing and the square bracket operator `[]`:
-    - determine what `RSID` value occurs in the 20th row
-    - return the cell where `lib.size` equals 14509963
-4. Subset the data to observations where `RSID` equals "RS102521" or "RS102484". *Hint*: Use a logical vector. 
+    - determine what `libID` value occurs in the 9th row
+    - return the cell where `total_seq` equals 10706098
+4. Subset the data to observations where `ptID` equals "pt05" or "pt08". *Hint*: Use a logical vector with the conditional statements above. 
 
 # *Navigation*
 

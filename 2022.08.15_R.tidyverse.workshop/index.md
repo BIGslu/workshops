@@ -48,4 +48,4 @@ Each lesson
 [lesson1]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/1_introR.html
 [lesson2]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/2_tidyverse.html
 [lesson3]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/3_ggplot.html
-[workshop]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/tidyverse_RNAseq.html
+[workshop]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/R_tidyverse_RNAseq_edition.html

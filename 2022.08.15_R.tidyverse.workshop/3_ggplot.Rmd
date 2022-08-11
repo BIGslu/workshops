@@ -6,35 +6,42 @@ date: "version `r format(Sys.time(), '%B %d, %Y')`"
 output:
   html_document:
     toc: yes
-    toc_depth: 3
+    toc_depth: 4
     toc_float:
       collapsed: no
   pdf_document:
     toc: yes
-    toc_depth: '3'
+    toc_depth: '4'
 editor_options:
   chunk_output_type: console
 urlcolor: blue
+fig_width: 6 
 ---
 
 ```{r, include=FALSE}
-knitr::opts_chunk$set(fig.path = 'figures/')
 #set working dir to project
 knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 ```
 
 # 3. Data visualization in ggplot
 
-ggplot2 is the tidyverse's main plotting package. Full documentation is available at
-[docs.ggplot2.org](http://docs.ggplot2.org/current/)
+In this workshop, we introduce you to data visualization in `ggplot` ([docs.ggplot2.org](http://docs.ggplot2.org/current/)), the [tidyverse](https://www.tidyverse.org/) package for plots. In it, we cover how to create:
 
-We load ggplot within the tidyverse.
+* Volcano plot
+* PCA plot
+* Customization such as color, shape, theme
+* Facets
+
+During the workshop, we will build an R script together, which will be posted as 'live_notes' after the workshop at <https://github.com/BIGslu/workshops/tree/main/2022.08.15_R.tidyverse.workshop/live_notes>
+
+We load `ggplot` within the `tidyverse.` For more information on installation, see the [setup instructions][lesson0].
 
 ```{r}
 library(tidyverse)
 ```
 
 ## Intro to ggplot
+
 ### Why ggplot?
 
 ggplot2 is an implementation of _Grammar of Graphics_ (Wilkinson 1999) for R
@@ -44,7 +51,7 @@ Benefits:
 - handsome default settings
 - snap-together building block approach
 - automatic legends, colors, facets
-- statistical overlays: regressions lines and smoothers (with confidence intervals)
+- statistical overlays like regressions lines and smoothers (with confidence intervals)
 
 Drawbacks:
 
@@ -53,26 +60,26 @@ Drawbacks:
 
 ### ggplot layers
 
-`ggplot` functions by adding layers to a plot, somewhat like how dplyr/tidyr sequentially modify data with the pipe `%>%`. Instead, ggplot uses the `+` to combine layers such as:
+`ggplot` functions by adding layers to a plot, somewhat like how `dplyr`/`tidyr` sequentially modify data with the pipe `%>%`. Instead, `ggplot` uses the `+` to combine layers such as:
 
-- data: 2D table (`data.frame`) of _variables_
-- _aesthetics_: map variables to visual attributes (e.g., position)
-- _geoms_: graphical representation of data (points, lines, etc.)
+- _data_: 2D table (`data.frame`) of _variables_
+- _aesthetics_: map variables to visual attributes (position, color, etc)
+- _geoms_: graphical representation of data (points, lines, etc)
 - _stats_: statistical transformations to get from data to points in
-the plot(binning, summarizing, smoothing)
-- _scales_: control _how_ to map a variable to an aesthetic
-- _facets_: juxtapose mini-plots of data subsets, split by variable(s)
-- _guides_: axes, legend, etc. reflect the variables and their values
+the plot (binning, summarizing, smoothing)
+- _scales_: control how to map a variable to an aesthetic
+- _facets_: juxtapose mini-plots of data subsets, split by variables
+- _guides_: axes, legend, etc. that reflect the variables and their values
 
 The idea is to independently specify and combine layers to create the plot you want. There are at least three things we have to specify to create any plot:
 
 1. data
 2. aesthetic mappings from data variables to visual properties
-3. a layer describing how to draw those properties
+3. a geom describing how to draw those properties
 
 ## Data
 
-A quick reminder about our data. There are bulk RNA-seq contained in the `dat` object in file data/dat_voom.RData. Normalized log2 counts per million (CPM) are contained in `dat$E` and library metadata are in `dat$targets`. You will not need the other pieces of `dat` for this workshop.
+A quick reminder about our data. There are bulk RNA-seq contained in the `dat` object in file "data/dat_voom.RData". Normalized log2 counts per million (CPM) are contained in `dat$E` and library metadata are in `dat$targets`. You will not need the other pieces of `dat` for this workshop.
 
 ```{r}
 load("data/dat_voom.RData")
@@ -97,13 +104,13 @@ Here is a brief description of the variables in the metadata.
 ## Basic plots
 ### Boxplot
 
-We will start with a boxplot of the total sequences per library. First, we call a ggplot object. Since we've given it no data, this is a blank plot.
+We will start with a boxplot of the total sequences per library. First, we call a ggplot object. Since we've given it no data or aesthetics, this is a blank plot.
 
 ```{r}
 ggplot()
 ```
 
-Then, we give the plot data and specify aesthetics for which parts of the data we want to plot. Now, we see that ggplot knows what the scale of the y data will be.
+Then, we give the plot data and specify aesthetics for which parts of the data we want to plot. Now, we see that ggplot knows what the scale of the y data will be. Throughout this section, we will highlight lines of code that change with the comment `#<--- see change`.
 
 ```{r}
 ggplot(dat$targets) +
@@ -126,9 +133,25 @@ ggplot(dat$targets) +
   geom_boxplot()
 ```
 
+### Data ordering with factors
+
+Our x-variable happens to be in the correct alphabetical order with the `Media` controls before `Mtb` infection. However, alphabetical does not always give you want you want. You can force a variable's order by converting it to a factor. Let's switch the `condition` order.
+
+```{r}
+dat$targets %>% 
+  mutate(condition_fct = factor(condition, 
+                            levels = c("Mtb", "Media"))) %>% #<--- see change
+  
+  ggplot() +
+  aes(y = total_seq, x = condition_fct) + 
+  geom_boxplot()
+```
+
+Notice how we now pipe `%>%` the data into ggplot so that we can modify it in `dplyr` first.
+ 
 ### Dotplot
 
-These same data could be displayed as a dotplot instead.
+These same data could be displayed as a dotplot instead. We return to the original `condition` order since it was correct.
 
 ```{r}
 ggplot(dat$targets) +
@@ -155,9 +178,7 @@ ggplot(dat$targets) +
   geom_jitter() #<--- see change
 ```
 
-But you may notice that there are some duplicate points. Looking back at the first boxplots, there are points for points outside the box. These points remain in the above plot plus appear jittered from the second geom. We can fix this by telling the boxplot to not plot the outliers.
-
-And while this is not an issue in this plot (since there are no outliers), you should also remove the outliers plotted by `geom_boxplot` or else there will be duplicate points with `geom_jitter`.
+But you may notice that there are some duplicate points. Looking back at the first boxplots, there are points for data outside the box. These points remain in the above plot plus appear jittered from the second geom. We can fix this by telling the boxplot to not plot the outliers.
 
 ```{r}
 ggplot(dat$targets) +
@@ -166,9 +187,9 @@ ggplot(dat$targets) +
   geom_jitter()
 ```
 
-#### Order matters
+#### Layer order matters
 
-Because ggplot works in layers, the order matters. If for example we put the boxplot after the jitter, the boxes cover up points! We use `alpha` for transparency so you can see these points. Thus, we careful when considering how you setup your plot!
+Because ggplot works in layers, the order matters. If, for example, we put the boxplot after the jitter, the boxes cover up points! We use `alpha` for transparency so you can see these points. Thus, be careful when considering how you setup your plot!
 
 ```{r}
 ggplot(dat$targets) +
@@ -208,7 +229,7 @@ dat.pca <- prcomp(t(dat$E), scale.=TRUE, center=TRUE)
 dat.pca$x[1:3,1:3]
 ```
 
-Then we use join to add metadata to the PCA data, so we can annotate the PCA plot.
+Then we use join to add metadata to the PCA data, so we can annotate the PCA plot with variables of interest.
 
 ```{r}
 dat.pca.meta <- as.data.frame(dat.pca$x) %>% 
@@ -234,11 +255,18 @@ We already have space as libraries are separated along x and y. Now we add color
 
 ```{r}
 ggplot(dat.pca.meta) +
-  aes(x = PC1, y = PC2, shape = condition) + #<--- see change
+  aes(x = PC1, y = PC2, color = condition) + #<--- see change
   geom_point()
 ```
 
-I like to keep all my aesthetics in one layer, but you could keep adding `aes()` functions to the plot if you prefer.
+I like to keep all my aesthetics in one layer, but you could keep adding `aes()` functions to the plot if you prefer. This gives the same plot.
+
+```{r eval=FALSE}
+ggplot(dat.pca.meta) +
+  aes(x = PC1, y = PC2) + #<--- see change
+  geom_point() +
+  aes(color = condition) #<--- see change
+```
 
 We could also use shape for the same data. Which plot to you think is easier to interpret?
 
@@ -248,11 +276,11 @@ ggplot(dat.pca.meta) +
   geom_point()
 ```
 
-We're not showing size or transparency because these aesthetics are difficult to see and should be avoided unless you *really* need them or the differences between data points are large.
+We're not showing size or transparency because these aesthetics are difficult to see and should be avoided unless you *really* need them or the differences between data points are large enough to see in these aesthetics.
 
 #### Labels
 
-We can also improve our axes and legend labels. First we see what proportion of variation is explained by each PC.
+We can also improve our axes and legend labels. First, we see what proportion of variation is explained by each PC.
 
 ```{r}
 summary(dat.pca)$importance
@@ -268,9 +296,9 @@ ggplot(dat.pca.meta) +
        color = "Infection")
 ```
 
-#### Themes
+#### Coordinates
 
-`ggplot` has a number of themes that change the aesthetics of the plot. I like `theme_classic` for PCA. You can also checkout more themes in the package `ggthemes`
+Since PCA units are relative, it is nice to have the scales of the x and y be the same. That is, 1 inch of space corresponding to the same values for both. This is accomplished with `coord_fixed`. Note that in this PCA, this function does not change the plot much but it can can a big effect in other PCA! There are also several other coordinate systems you can see with `coord_`.
 
 ```{r}
 ggplot(dat.pca.meta) +
@@ -278,6 +306,20 @@ ggplot(dat.pca.meta) +
   geom_point() +
   labs(x = "PC1 (24%)", y = "PC2 (11%)",
        color = "Infection") +
+  coord_fixed() #<--- see change
+```
+
+#### Themes
+
+`ggplot` has a number of themes that change the aesthetics of the plot. I like `theme_classic` for PCA. Type `theme_` into the console to see the available themes suggested with auto-complete. You can also checkout more themes in the package `ggthemes`.
+
+```{r}
+ggplot(dat.pca.meta) +
+  aes(x = PC1, y = PC2, color = condition) +
+  geom_point() +
+  labs(x = "PC1 (24%)", y = "PC2 (11%)",
+       color = "Infection") +
+  coord_fixed() +
   theme_classic() #<--- see change
 ```
 
@@ -287,7 +329,7 @@ Let's move on to another application of `geom_point`. A volcano plot shows diffe
 
 #### Linear modeling
 
-We'll need to perform linear modeling to determine these results. Below is the workflow for comparing Mtb-infected vs media samples, corrected for sex and blocked by patient. We use our R package [`kimma`][https://github.com/BIGslu/kimma]. You DO NOT need to run these steps. They are here in case you want to run a similar analysis in the future.
+We'll need to perform linear modeling to determine these results. Below is the workflow for comparing Mtb-infected vs media samples, corrected for sex and blocked by patient. We use our R package [`kimma`](https://github.com/BIGslu/kimma). You **DO NOT** need to run these steps. They are here in case you want to run a similar analysis in the future.
 
 ```{r eval=FALSE}
 install.packages("devtools")
@@ -315,7 +357,7 @@ Failed: 0 genes
 save(fit, file="data/kimma_result.RData")
 ```
 
-Instead, load the results from the data downloaded for this workshop. Note that this is an S3 object similar to the `dat` object. In it, we have our log2 fold change `estimate` and significance `FDR` for each gene and each variable.
+Instead, load the results from the data downloaded for this workshop. Note that this is an S3 object similar to the `dat` object. In it, we have the linear mixed effects (lme) model results in `fit$lme`, which includes our log2 fold change `estimate` and significance `FDR` for each gene and each variable.
 
 ```{r}
 load("data/kimma_result.RData")
@@ -325,7 +367,7 @@ fit$lme
 
 #### Color
 
-Let's start with a basic dotplot like before. We first filter the fit data to just the variable condition so that we have 1 point per gene. Notice how we now pipe `%>%` the data into ggplot so that we can modify it in dplyr/tidyr first.
+Let's start with a basic dotplot like before. We first filter the fit data to just the variable `condition` so that we have 1 point per gene.
 
 ```{r}
 fit$lme %>% 
@@ -380,7 +422,7 @@ fit$lme %>%
 
 #### Lines
 
-Since we're defining significance at a cutoff, we can plot that cutoff with a vertical line with `geom_vline`. Other similar geoms are `geom_hline` for a horizontal line and `geom_abline` for a line with slope a and intercept b.
+Since we're defining significance at a cutoff, we can plot that cutoff with a vertical line with `geom_vline`. Other similar geoms are `geom_hline` for a horizontal line and `geom_abline` for a line with slope `a` and intercept `b`.
 
 ```{r}
 fit$lme %>% 
@@ -429,22 +471,18 @@ fit$lme %>%
   geom_point() +
   scale_color_manual(values = c("blue", "grey", "red")) +
   geom_hline(yintercept = -log10(0.01)) +
-  lims(x = c(-6, 6)) #<--- see change
+  lims(x = c(-3, 3)) #<--- see change
 ```
 
 #### Label points
 
-We're going to use a ggplot extension package to label our most significant genes. Please install and load it like so.
-
-```{r eval=FALSE}
-install.packages("ggrepel")
-```
+We're going to use a ggplot extension package to label our most significant genes. Let's load that package now.
 
 ```{r}
 library(ggrepel)
 ```
 
-First, we determine what our top 2 up and down regulated genes are.
+First, we determine our top 2 up and down regulated genes. There are some new `dplyr` functions in here! See the comments for information.
 
 ```{r}
 top_deg <- fit$lme %>% 
@@ -452,13 +490,13 @@ top_deg <- fit$lme %>%
   mutate(direction = case_when(estimate < 0 ~ "down",
                                estimate > 0 ~ "up")) %>% 
   group_by(direction) %>% 
-  slice_min(FDR, n=2) %>% 
-  pull(gene)
+  slice_min(FDR, n=2) %>% # Keeps n number of minimum FDR values
+  pull(gene) # Extract the variable and turns the data into a vector
 
 top_deg
 ```
 
-Then we add those labels to our fit data and use that variable in `geom_text_repel`
+Then we add those labels to our fit data and use that variable in `geom_text_repel`. In this case, the data removal warning is expected as we're not labeling the majority of points.
 
 ```{r}
 fit$lme %>% 
@@ -466,7 +504,7 @@ fit$lme %>%
   mutate(significance = case_when(FDR < 0.01 & estimate < 0 ~ "down",
                                   FDR < 0.01 & estimate > 0 ~ "up",
                                   TRUE ~ "NS")) %>% 
-  mutate(label = case_when(gene %in% top_deg ~ gene)) %>% 
+  mutate(label = case_when(gene %in% top_deg ~ gene)) %>%  #<--- see change
   
   ggplot() +
   aes(x = estimate, y = -log10(FDR), color = significance) +
@@ -475,6 +513,25 @@ fit$lme %>%
   geom_hline(yintercept = -log10(0.01)) +
   lims(x = c(-9, 9)) +
   geom_text_repel(aes(label = label)) #<--- see change
+```
+
+The text legend gets overlayed with the point legend, which looks odd. Let's remove one of them.
+
+```{r}
+fit$lme %>% 
+  filter(variable == "condition") %>% 
+  mutate(significance = case_when(FDR < 0.01 & estimate < 0 ~ "down",
+                                  FDR < 0.01 & estimate > 0 ~ "up",
+                                  TRUE ~ "NS")) %>% 
+  mutate(label = case_when(gene %in% top_deg ~ gene)) %>%
+  
+  ggplot() +
+  aes(x = estimate, y = -log10(FDR), color = significance) +
+  geom_point() +
+  scale_color_manual(values = c("blue", "grey", "red")) +
+  geom_hline(yintercept = -log10(0.01)) +
+  lims(x = c(-9, 9)) +
+  geom_text_repel(aes(label = label), show.legend = FALSE) #<--- see change
 ```
 
 And a small edit if you don't want the text to be colored. When you put an aesthetic in a specific geom, it only applies that change to that one geom.
@@ -493,7 +550,7 @@ fit$lme %>%
   scale_color_manual(values = c("blue", "grey", "red")) +
   geom_hline(yintercept = -log10(0.01)) +
   lims(x = c(-9, 9)) +
-  geom_text_repel(aes(label = label))
+  geom_text_repel(aes(label = label), show.legend = FALSE)
 ```
 
 #### Theme
@@ -518,11 +575,11 @@ fit$lme %>%
   theme_bw() #<--- see change
 ```
 
-There you have it! Did you think you'd reach a 12 function plot so soon? 
+There you have it! Did you think you'd reach a 11 function plot so soon? 
 
 #### Facets
 
-With big data, we often want to plot more than one thing at once. Facets allow you to make similar plots across multiple subsets of data with only 1 additional line of code. Here, we don't filter for just the condition variable and instead, facet across 2 of the variables in the model.
+With big data, we often want to plot more than one thing at once. Facets allow you to make similar plots across multiple subsets of data with only 1 additional line of code. Here, we filter for 2 `variable` and then facet those into 2 plots.
 
 ```{r}
 fit$lme %>% 
@@ -537,17 +594,17 @@ fit$lme %>%
   geom_point(aes(color = significance)) + 
   scale_color_manual(values = c("blue", "grey", "red")) +
   geom_hline(yintercept = -log10(0.01)) +
-  lims(x = c(-9, 9)) +
+  #<--- see change No lims used
   geom_text_repel(aes(label = label)) +
   theme_bw() +
   facet_wrap(~ variable) #<--- see change
 ```
 
-Since the y scales differ substantially for the two variable, we allow them to differ with `scales`. This can be set to "free_x", "free_y", or "free" for both x and y.
+Since the a and y scales differ for the two variable, we allow them to differ with `scales`. This is my we removed the `lims` function earlier. `scales` can be set to "free_x", "free_y", or "free" for both x and y.
 
 ```{r}
 fit$lme %>% 
-  filter(variable %in% c("condition", "sex")) %>% #<--- see change
+  filter(variable %in% c("condition", "sex")) %>%
   mutate(significance = case_when(FDR < 0.01 & estimate < 0 ~ "down",
                                   FDR < 0.01 & estimate > 0 ~ "up",
                                   TRUE ~ "NS")) %>% 
@@ -558,21 +615,95 @@ fit$lme %>%
   geom_point(aes(color = significance)) + 
   scale_color_manual(values = c("blue", "grey", "red")) +
   geom_hline(yintercept = -log10(0.01)) +
-  lims(x = c(-9, 9)) +
   geom_text_repel(aes(label = label)) +
   theme_bw() +
-  facet_wrap(~ variable, scales = "free_y") #<--- see change
+  facet_wrap(~ variable, scales = "free") #<--- see change
 ```
 
-# Exercises: ggplot
+### Save plots
 
-1. Using the combined expression and metadata you made in the last session, plot the expression of one gene in media vs Mtb. The plot type is up to you! As a reminder, here is how we made the combined data.
+Once you have your plot as you desire, save it to your computer for use in presentations, publications, Twitter, and more! `ggsave` allows you to save in a bunch of formats (see the help page with `?ggsave`). 
+
+Since we've only been printing our plots to the plot pane in RStudio, we need to first save a plot to the environment. We'll use the single `condtion` variable volcano plot.
+
+```{r}
+p1 <- fit$lme %>% #<--- see change
+  filter(variable == "condition") %>%
+  mutate(significance = case_when(FDR < 0.01 & estimate < 0 ~ "down",
+                                  FDR < 0.01 & estimate > 0 ~ "up",
+                                  TRUE ~ "NS")) %>% 
+  mutate(label = case_when(gene %in% top_deg ~ gene)) %>% 
+  
+  ggplot() +
+  aes(x = estimate, y = -log10(FDR)) +
+  geom_point(aes(color = significance)) + 
+  scale_color_manual(values = c("blue", "grey", "red")) +
+  geom_hline(yintercept = -log10(0.01)) +
+  geom_text_repel(aes(label = label)) +
+  theme_bw() 
+
+p1
+```
+
+Now we can save the object. My most commonly used plot formats are `.pdf` for publication (vectorized PDF that can be edited in Illustrator/Inkscape) and `.png` for all other uses (not vectorized, smaller files). You specify the file type in the filename and give dimensions in inches (default). Without dimensions, R used whatever the ratio of you plot pane currently is (not reproducible!).
+
+```{r}
+ggsave(filename = "images/volcano_plot.png", plot = p1, width = 3, height = 4)
+ggsave(filename = "images/volcano_plot.pdf", plot = p1, width = 3, height = 4)
+```
+
+## Commented plot scripts
+
+Here are each of the final plots fulled comments for your reference.
+
+```{r eval = FALSE}
+ggplot(dat.pca.meta) +                   # Make ggplot from data in dat.pca.meta
+  aes(x = PC1, y = PC2,                  # Plot PCs 1 and 2 along x and y
+      color = condition) +               # Color by condition
+  geom_point() +                         # Plot points for each value
+  labs(x = "PC1 (24%)", y = "PC2 (11%)", # Relabel axes
+       color = "Infection") +            # Relabel legend
+  coord_fixed() +                        # Force xy scales to be equal
+  theme_classic()                        # Set theme
+```
+
+```{r eval = FALSE}
+fit$lme %>% 
+  # Keep results for only the condition variable
+  filter(variable == "condition") %>% 
+  # Create variable for significant up and down genes
+  mutate(significance = case_when(FDR < 0.01 & estimate < 0 ~ "down",
+                                  FDR < 0.01 & estimate > 0 ~ "up",
+                                  TRUE ~ "NS")) %>% 
+  # Create variable for gene name labels
+  mutate(label = case_when(gene %in% top_deg ~ gene)) %>% 
+  
+  ggplot() +                                              # initiate ggplot plot
+  aes(x = estimate, y = -log10(FDR)) +                    # plot estimate and FDR
+  geom_point(aes(color = significance)) +                 # plot points, color by significance
+  scale_color_manual(values = c("blue", "grey", "red")) + # recolor points
+  geom_hline(yintercept = -log10(0.01)) +                 # add FDR cuttof line
+  lims(x = c(-9, 9)) +                                    # set axis limits
+  geom_text_repel(aes(label = label)) +                   # label points
+  theme_bw()                                              # set theme
+```
+
+```{r eval = FALSE}
+  ... + 
+  facet_wrap(~ variable) # facet by variable
+```
+
+## Exercises: ggplot
+
+1. Using the combined expression and metadata you made in the last session, plot the expression of one gene in `Media` vs `Mtb`. The plot type is up to you! As a reminder, here is how we made the combined data.
 
 ```{r}
 full_data <- as.data.frame(dat$E) %>% 
   rownames_to_column("gene") %>% 
   pivot_longer(-gene, names_to = "libID", values_to = "log2CPM") %>% 
   inner_join(dat$targets)
+
+full_data
 ```
 
 2. Color the PCA by the numeric variable `total_seq`. Explore the help pages for `scale_color_continuous`, `scale_color_gradient`, or `scale_color_gradient2` and recolor your PCA to more easily see differences. As a reminder, here is the base PCA plot.
