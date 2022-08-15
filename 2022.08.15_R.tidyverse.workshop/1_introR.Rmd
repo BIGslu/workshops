@@ -324,7 +324,7 @@ Using the `meta` data frame:
 2. Using an R function, determine what data type the `ptID_old` variable is.
 3. Using indexing and the square bracket operator `[]`:
     - determine what `libID` value occurs in the 9th row
-    - return the cell where `age_dys` equals 7300 and `condition` equals Media
+    - return the `libID` for a library where `age_dys` equals 7300 and `condition` equals Media
 4. Subset the data to observations where `ptID` equals "pt05" or "pt08". *Hint*: Use a logical vector with the conditional statements above. 
 
 # *Navigation*
