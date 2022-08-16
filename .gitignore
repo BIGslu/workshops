@@ -40,6 +40,8 @@ rsconnect/
 
 # Video
 *.mp4
+*.mp3
+*.m4a
 
 # Admin
 */admin/*
