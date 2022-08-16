@@ -38,5 +38,8 @@ rsconnect/
 # MAC
 *.DS_Store
 
-#Video
+# Video
 *.mp4
+
+# Admin
+*/admin/*
