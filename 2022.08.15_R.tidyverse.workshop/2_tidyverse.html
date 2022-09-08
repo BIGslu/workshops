@@ -1515,11 +1515,11 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Data manipulation in dplyr and tidyr</h1>
-<h3 class="subtitle">RSTR-seq edition</h3>
+<h3 class="subtitle">RNA-seq edition</h3>
 <h4 class="author"><div class="line-block">Kim Dill-McFarland<br />
 Adapted from <a href="umcarpentries.org/intro-curriculum-r/">U of
 Michigan Carpentries</a></div></h4>
-<h4 class="date">version August 01, 2022</h4>
+<h4 class="date">version September 08, 2022</h4>
 
 </div>
 
@@ -1546,8 +1546,8 @@ instructions</a>.</p>
 <pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.2 ──
 ## ✔ ggplot2 3.3.6     ✔ purrr   0.3.4
 ## ✔ tibble  3.1.8     ✔ dplyr   1.0.9
-## ✔ tidyr   1.2.0     ✔ stringr 1.4.0
-## ✔ readr   2.1.2     ✔ forcats 0.5.1
+## ✔ tidyr   1.2.0     ✔ stringr 1.4.1
+## ✔ readr   2.1.2     ✔ forcats 0.5.2
 ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()</code></pre>
@@ -1734,8 +1734,7 @@ either the Media or Mtb condition.</p>
 <pre class="r"><code>filter(meta, condition == &quot;Media&quot; &amp; condition == &quot;Mtb&quot;)</code></pre>
 <pre><code>## # A tibble: 0 × 9
 ## # … with 9 variables: libID &lt;chr&gt;, ptID &lt;chr&gt;, condition &lt;chr&gt;, age_dys &lt;dbl&gt;,
-## #   sex &lt;chr&gt;, ptID_old &lt;chr&gt;, RNAseq &lt;lgl&gt;, methylation &lt;lgl&gt;, total_seq &lt;dbl&gt;
-## # ℹ Use `colnames()` to see all variable names</code></pre>
+## #   sex &lt;chr&gt;, ptID_old &lt;chr&gt;, RNAseq &lt;lgl&gt;, methylation &lt;lgl&gt;, total_seq &lt;dbl&gt;</code></pre>
 <pre class="r"><code>filter(meta, condition == &quot;Media&quot; | condition == &quot;Mtb&quot;)</code></pre>
 <pre><code>## # A tibble: 20 × 9
 ##    libID      ptID  condition age_dys sex   ptID_old RNAseq methylation total_…¹
@@ -2156,8 +2155,7 @@ E_long</code></pre>
 ##  8 A1BG  pt04_Mtb   -0.264 
 ##  9 A1BG  pt05_Media  1.63  
 ## 10 A1BG  pt05_Mtb   -0.0305
-## # … with 268,370 more rows
-## # ℹ Use `print(n = ...)` to see more rows</code></pre>
+## # … with 268,370 more rows</code></pre>
 <p>Now both data frames have a <code>libID</code> column!</p>
 <p>Let’s combine our sequence counts with our metadata. To combine two
 data frames, we will use a <code>join</code> function. The dplyr package

@@ -1,6 +1,6 @@
 ---
 title: "Introduction to R and RStudio"
-subtitle: "RSTR-seq edition"
+subtitle: "RNA-seq edition"
 author: "Kim Dill-McFarland"
 date: "version `r format(Sys.time(), '%B %d, %Y')`"
 output:

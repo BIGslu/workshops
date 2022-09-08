@@ -1,6 +1,6 @@
 ---
 title: "Data manipulation in dplyr and tidyr"
-subtitle: "RSTR-seq edition"
+subtitle: "RNA-seq edition"
 author: |
     | Kim Dill-McFarland
     | Adapted from [U of Michigan Carpentries](umcarpentries.org/intro-curriculum-r/)
