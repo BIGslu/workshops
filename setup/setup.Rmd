@@ -1,47 +1,141 @@
 ---
-title: "Setup instructions"
+title: "Setup and installation"
+author: "Kim Dill-McFarland"
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
 output:
   html_document:
     toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
   pdf_document:
     toc: yes
+    toc_depth: '3'
+editor_options:
+  chunk_output_type: console
 urlcolor: blue
 ---
-You need to install and test R and RStudio before the workshop. The installation process is simple on all major platforms, and mostly consists of downloading and running the installers appropriate to your platform.
 
-## R and RStudio
+```{r, include=FALSE}
+#set working dir to project
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
 
-* [Install R](http://www.r-project.org), a free software environment for statistical computing and graphics.
-    - It is _highly recommended_ to install a precompiled binary distribution for your operating system -- use the links up at the top of the page linked to above!
-    - If you currently have R installed on your laptop, please make sure it is version 4.1.0 or later. *Please update if it is not!*
-* [Install RStudio](https://www.rstudio.com/products/rstudio/download/), a powerful user interface for R.
+# Prior to the workshop, please complete the following:
 
-## Testing testing
+## Download the data
 
-1. Do whatever is appropriate for your OS to launch RStudio. You should get a window similar to the screenshot below.
-    -  If you don't see a window that is divided into distinct areas labelled "Console", "Environment", etc., you are probably running the user interface that comes bundled with R. Check that RStudio ![](images/RStudio_logo.png){width=0.4in} is present in your applications and start it instead.
-  
-  ![](images/rstudio.png){width=70%}
-  \ 
-  
-2. Put your cursor in the left pane labelled "Console", which is where you interact with the live R process. Create a simple object with code like `x <- 2 * 4` (followed by enter or return). In the "Environment" pane, to the right of the Console, you should see an entry for "x" with appropriate value (in this case, 8).
-  
-3. Then inspect the `x` object by typing `x` in the Console followed by enter or return. You should see the value 8 printed to the screen.
+Please download the data in [data.zip](https://github.com/BIGslu/workshops/raw/main/setup/data/data.zip). Then, move data.zip to your Desktop and unzip it (usually double-clicking it will work). This contains data files for all BIGslu workshops; you will not need all of the files for each workshop.
 
-4. Finally, check that plotting works. In the console, type `plot(cars)`. If you see a scatterplot appear in the "Plots" pane to the lower right,  you are good to go.
+If the above link does not work, please try downloading the data with the Download button at <https://github.com/BIGslu/workshops/blob/main/setup/data/data.zip>.
 
-## Further resources
+## Install R and RStudio
 
-The above is sufficient preparation for this workship but here are some links if you are interested in reading a bit further.
+* Install R, <https://cran.r-project.org/index.html>
+    - If you already have R installed, please upgrade to version 4.1 or newer
+* Install RStudio (free version), <https://www.rstudio.com/products/rstudio/download/>
 
-* How to Use RStudio:
-    - <https://support.rstudio.com/hc/en-us/sections/200107586-Using-RStudio>
-* RStudio Public Discussion & Troubleshooting Guide:
-    - <https://support.rstudio.com/hc/en-us/sections/203994097-RStudio-IDE>
-* How to Install R:
-    - <http://cran.r-project.org/doc/manuals/R-admin.html>
-    - <http://cran.stat.sfu.ca/doc/FAQ/R-FAQ.html#How-can-R-be-installed_003f>
-* R FAQ:
-    - <http://cran.r-project.org/doc/FAQ/R-FAQ.html>
-* More about add-on packages in the R Installation and Administration Manual
-     - <http://cran.r-project.org/doc/manuals/R-admin.html#Add_002don-packages>
+When you open RStudio, it should look like so with multiple panels. If you see only 1 panel, then you’re likely in R, not RStudio.
+
+![](images/rstudio.png){width=50%}
+
+## Install R packages
+
+Install R packages by running a script in your R console in RStudio (left panel in the above image). Each workshop has an overlapping but unique list of packages. Please select the appropriate script from those below.
+
+*If prompted*, say `a` to "Update all/some/none? [a/s/n]" and `no` to "Do you want to install from sources the packages which need compilation? (Yes/no/cancel)"
+
+**This can take several minutes.**
+
+#### Intro R
+
+```{r eval=FALSE}
+#CRAN packages
+install.packages("tidyverse")
+#Bioconductor packages
+install.packages("BiocManager")
+```
+
+#### Intro to R and tidyverse, RNA-seq edition:
+
+```{r eval=FALSE}
+#CRAN packages
+install.packages("tidyverse")
+install.packages("ggrepel")
+#Bioconductor packages
+install.packages("BiocManager")
+BiocManager::install("limma")
+```
+
+#### RNA-seq analysis in R
+
+```{r eval=FALSE}
+#CRAN packages
+install.packages(c("tidyverse", "lme4", "lmerTest"))
+#Bioconductor packages
+install.packages("BiocManager")
+BiocManager::install(c("edgeR", "biomaRt", "limma"))
+#GitHub packages
+install.packages("devtools")
+devtools::install_github("BIGslu/RNAetc")
+devtools::install_github("BIGslu/kimma")
+```
+
+#### Plotting in ggplot
+
+```{r eval=FALSE}
+#CRAN packages
+install.packages("tidyverse")
+#Bioconductor packages
+install.packages("BiocManager")
+BiocManager::install("limma")
+#GitHub packages
+install.packages("devtools")
+devtools::install_github("BIGslu/kimma")
+```
+
+#### Linear modeling in R
+
+```{r eval=FALSE}
+# CRAN packages
+install.packages(c("tidyverse", "lme4", "car"))
+# Bioconductor packages
+install.packages("BiocManager")
+BiocManager::install(c("limma","variancePartition"))
+# GitHub packages
+install.packages("devtools")
+devtools::install_github("BIGslu/kimma")
+```
+
+#### R packages
+
+```{r eval=FALSE}
+# CRAN packages
+install.packages(c("devtools", "usethis", "roxygen2"))
+```
+
+## Check R package install
+
+To make sure packages are correctly installed, load each of them individually into R with `library( )`. 
+
+For example, the `tidyverse` is a meta-package containing multiple packages. It gives the following message when loaded into R. Your exact version numbers way vary slightly.
+
+```{r}
+library(tidyverse)
+```
+
+In contrast, packages such as `limma` load silently with no messages.
+
+```{r}
+library(limma)
+```
+
+The key is to look for any messages that contain `ERROR` or `there is no package called X`. This means the package was not installed correctly. **If you see any errors, please come 15 minutes early to the workshop or contact Kim for assistance.**
+
+# *Navigation*
+
+* [Workshop index][index]
+
+***
+
+[index]: https://bigslu.github.io/workshops/

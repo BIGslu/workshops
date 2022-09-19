@@ -4,7 +4,7 @@
 
 ### R
 
-* [Setup and installation](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/0_setup.html)
+* [Setup and installation](https://bigslu.github.io/workshops/setup/setup.html)
 * [Intro R](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/1_introR.html): 1-hour Introduction to R and RStudio. No prior experience needed.
 * [Intro to R and tidyverse, RNA-seq edition](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/index.html): 7-hour Introduction to R and tidyverse using real-world RNA-seq data. Includes Intro R, dplyr, tidyr, and ggplot. No prior experience needed.
 * [RNA-seq analysis in R](https://bigslu.github.io/2022_ASM_Microbe_RNAseq/index.html): 6-hour Differential gene expression analysis using linear mixed effects models. Includes Intro R, dplyr, ggplot, edgeR, limma, and kimma. No prior experience needed.
