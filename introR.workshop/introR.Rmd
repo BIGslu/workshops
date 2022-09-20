@@ -147,18 +147,40 @@ Function(argument1=..., argument2=..., ...)
 * `sep` - tells R that our data are comma-separated
 * `header` - tells R that the first row in our data contains the names of the variables (columns).
 
-We will store the data as an *object* named `meta` using the assignment operator `<-`, so that we can re-use it in our analysis. 
+We will store the data as an *object* named `meta_csv` using the assignment operator `<-`, so that we can re-use it in our analysis. 
 
 ```{r}
 # read the data and save it as an object
-meta_csv <- read.table(file="data/metadata.csv", sep=",", header=TRUE)
+meta_csv <- read.table(file="data/meta.csv", sep=",", header=TRUE)
 ```
 
 Now whenever we want to use these data, we simply call `meta_csv`
 
+#### Data introduction
+
+A little background on these data. 
+
+*Mycobacterium tuberculosis* (Mtb) is the causative agent of tuberculosis (TB). TB is among the top infectious killers worldwide... and had been for centuries. Mtb predominantly infects lung macrophages (a type of immune cell in the class monocyte), and exposure to Mtb results in infection that is cleared, contained, or progresses to disease. Mechanisms that distinguish these outcomes are largely unknown. 
+
+The data used in this workshop are from a RNA-seq experiment exploring the impacts of Mtb infection on human monocytes from individuals with latent TB infection (LTBI) or with resistance to Mtb infection (RSTR). Here, we have a subset of 10 individuals including:
+
+* `libID`: Unique library ID for each sequencing library. Formatted as ptID_condition
+* `ptID`: Patient ID. Each patient has 2 libraries which differ in their `condition`
+* `condition`: Experimental condition. Media for media control. Mtb of *M. tuberculosis* infected.
+* `age_dys`: Age in days
+* `sex`: Biological sex, M or F
+* `ptID_old`: Old patient ID with leading zeroes
+* `RNAseq`: If the library has pass-filter RNA-seq data
+* `methylation`: If the library has pass-filter methylation data
+* `total_seq`: Total number of pass-filter sequences
+
+More information can be found in 
+
+Simmons JD, Dill-McFarland KA, et al. 2022. Monocyte transcriptional responses to *Mycobacterium tuberculosis* associate with resistance to tuberculin skin test and interferon gamma release assay conversion. mSphere 7(3): e0015922. doi: [10.1128/msphere.00159-22](https://doi.org/10.1128/msphere.00159-22) --- [GitHub](https://github.com/hawn-lab/RSTR_RNAseq_Mtb_public)
+
 ### Help function
 
-You can read up about the different arguments of a specific function by typing `?Function` or `help(Function)` in your R console.
+Now back to R. You can read up about the different arguments of a specific function by typing `?Function` or `help(Function)` in your R console.
 
 ```{r}
 ?read.table
@@ -168,7 +190,7 @@ You will notice that there are multiple functions of the `read.table` help page.
 
 ```{r eval=FALSE}
 # read the data with different function
-meta_csv <- read.csv(file="data/metadata.csv")
+meta_csv <- read.csv(file="data/meta.csv")
 ```
 
 ### Complex data from `.RData`
@@ -176,7 +198,7 @@ meta_csv <- read.csv(file="data/metadata.csv")
 You may have data that do not fit nicely into a single table or into a table at all (like plots). You can save these as `.RData`, which can be loaded directly into R. You can also save multiple tables and/or other objects in a single `.RData` file to make loading your data quick and easy. Moreover, `.RData` are automatically compressed so they take up less storage space than multiple tables.
 
 ```{r}
-load("data/metadata.RData")
+load("data/meta.RData")
 ```
 
 Notice that these data appear already named in your R environment as `meta`. Object names are determined when saving so be sure to create short but descriptive names before saving to `.RData`.
@@ -199,13 +221,15 @@ meta$ptID
 
 R objects have several different classes (types). Our data frame contains 5 R data types. The base R `class` function will tell you what data type an object is.
 
+We see that our `ptID` column is `character`, meaning it is non-numeric letters and characters. `condition` is a `factor`, meaning it is a character variable with discrete levels. A `character` variable can be anything while a `factor` can only be one of a set of pre-defined levels.
+
 ```{r}
 class(meta)
 class(meta$ptID)
 class(meta$condition)
 ```
 
-We see that our `ptID` column is `character`, meaning it is non-numeric letters and characters. `condition` is a `factor`, meaning it is a character variable with discrete levels. A `character` variable can be anything while a `factor` can only be one of a set of pre-defined levels.
+One advantage of `.RData` is that is saves formatting not found in a `.csv`. Here, we see that the `condition` variable in `meta_csv` contains the same data as `meta` but `meta` from the `.RData` has `factor` formatting. Thus, `.RData` are a good way to save your data when you have factors or other within R formatting.
 
 ```{r}
 meta$condition
@@ -215,17 +239,17 @@ meta_csv$condition
 class(meta_csv$condition)
 ```
 
-One advantage of `.RData` is that is saves formatting not found in a `.csv`. Here, we see that the `condition` variable in `meta_csv` contains the same data as `meta` but `meta` from the `.RData` has `factor` formatting. Thus, `.RData` are a good way to save your data when you have factors or other within R formatting.
+Continuing on, `age_dys` is `numeric`, meaning a number, and `total_seq` is `integer`, meaning a whole number with no decimals.
 
 ```{r}
 class(meta$age_dys)
 class(meta$total_seq)
-class(meta$RNAseq)
 ```
 
-Continuing on, `age_dys` is `numeric`, meaning a number, and `total_seq` is `integer`, meaning a whole number with no decimals. 
-
 Finally, `RNAseq` is `logical` meaning TRUE/FALSE - which need to be all caps for R to recognize them as such.
+```{r}
+class(meta$RNAseq)
+```
 
 You can see the entire structure of the data with `str`.
 
@@ -250,7 +274,7 @@ dat$genes
 dat$targets$ptID
 ```
 
-Working with `S4` objects is very similar to `S3` except that they are accessed with `@` instead of `$`. Again, we will not use these data types here and you can explore them further in more advanced workshops.
+Working with `S4` objects is very similar to `S3` except that they are accessed with `@` instead of `$`. Again, we will not use these data types here, and you can explore them further in more advanced workshops.
 
 ## Working with vectors and data frames
 ### Operating on vectors
@@ -305,7 +329,7 @@ logical.vector
 meta[logical.vector, ]
 ```
 
-Subsetting is extremely useful when working with large data. Please find a reference of common statements used in subsetting below. You can also learn the `tidyverse` way to subset and work with data in our workshop [Intro to R and tidyverse](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/index.html).
+Subsetting is extremely useful when working with large data. Please find a reference of common statements used in subsetting below.
 
 ### Quick reference: Conditional statements
 
@@ -324,6 +348,19 @@ Statement | Meaning
 `&`       | And
 `|`       | Or
 
+
+## Plotting
+
+One of the most important (if not THE most important) steps in data cleaning and analysis is plotting your data. As they say, a picture is worth a 1000 words.
+
+Here, we use base R's plotting function `hist` to make a histogram of the total number of sequences in our data. We can quickly determine a number of things like 1) there are no extreme outliers and 2) the data are not normally distributed. This can then inform our downstream analysis such as linear modeling, etc.
+
+```{r}
+hist(meta$total_seq)
+```
+
+We encourage you to learn to make more beautiful plots in the `tidyverse` in our other workshops!
+
 ## Exercises: Intro R
 
 1. Using help to identify the necessary arguments for the log function, compute the natural logarithm of 4, base 2 logarithm of 4, and base 4 logarithm of 4.
@@ -335,6 +372,13 @@ Using the `meta` data frame:
     - determine what `libID` value occurs in the 9th row
     - return the `libID` for a library where `age_dys` equals 7300 and `condition` equals Media
 4. Subset the data to observations where `ptID` equals "pt05" or "pt08". *Hint*: Use a logical vector with the conditional statements above. 
+5. Create a boxplot of `total_seq` by `condition` groups (i.e. Media vs Mtb). *Hint*: Checkout the `plot` function. Your resulting plot should look like below.
+
+```{r echo=FALSE}
+plot(x = meta$condition, y = meta$total_seq)
+```
+
+6. Further explore the options for `plot` and customize your plot. You can change the axes labels, add a title, add color, and much more!
 
 # *Navigation*
 
