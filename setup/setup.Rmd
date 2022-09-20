@@ -54,6 +54,7 @@ Install R packages by running a script in your R console in RStudio (left panel 
 install.packages("tidyverse")
 #Bioconductor packages
 install.packages("BiocManager")
+BiocManager::install("limma")
 ```
 
 #### Intro to R and tidyverse, RNA-seq edition:

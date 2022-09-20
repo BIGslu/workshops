@@ -1,6 +1,5 @@
 ---
 title: "Introduction to R and RStudio"
-subtitle: "RNA-seq edition"
 author: "Kim Dill-McFarland"
 date: "version `r format(Sys.time(), '%B %d, %Y')`"
 output:
@@ -17,7 +16,10 @@ editor_options:
 knitr::opts_chunk$set(fig.width = 3, fig.height = 3)
 ```
 
-# 1. Introduction to R and RStudio
+# Introduction
+
+Prior to this workshop, you should complete [setup and installation](https://bigslu.github.io/workshops/setup/setup.html).
+
 In this workshop, we introduce you to R and RStudio at the beginner level. In it, we cover:
 
 * R and RStudio including projects, scripts, and packages
@@ -25,11 +27,12 @@ In this workshop, we introduce you to R and RStudio at the beginner level. In it
 * Reading in data as a data frame and RData
 * Data types
 
-We will do all of our work in [RStudio](https://www.rstudio.com/). RStudio is an integrated development and analysis environment for R that brings a number of conveniences over using R in a terminal or other editing environments.
-
-During the workshop, we will build an R script together, which will be posted as 'live_notes' after the workshop at <https://github.com/BIGslu/workshops/tree/main/2022.08.15_R.tidyverse.workshop/live_notes>
+During the workshop, we will build an R script together. This will be posted with today's data under `live_notes/` after the workshop at <https://github.com/BIGslu/workshops/tree/main/introR.workshop/live_notes/>
 
 ## A Tour of RStudio
+
+We will do all of our work in [RStudio](https://www.rstudio.com/). RStudio is an integrated development and analysis environment for R that brings a number of conveniences over using R in a terminal or other editing environments.
+
 When you start RStudio, you will see something like the following window appear:
 
 ![](images/rstudio.png)
@@ -51,6 +54,7 @@ Projects are a great feature of RStudio. When you create a project, RStudio crea
 RStudio has a simple interface to create and switch between projects, accessed from the button in the top-right corner of the RStudio window. (Labeled "Project: (None)", initially.)
 
 ##### Create a Project
+
 Let's create a project to work in for this workshop. Start by clicking the "Project" button in the upper right or going to the "File" menu. Select "New Project" and the following will appear.
 
 ![](images/new_project1.png){width=50%}
@@ -79,13 +83,12 @@ We will work together to create and populate the `introR_live_notes.R` script th
 
 R packages are units of shareable code, containing functions that facilitate and enhance analyses. Packages are typically installed from [CRAN](https://www.r-project.org/) (The Comprehensive R Archive Network), which is a database containing R itself as well as many R packages. Any package can be installed from CRAN using the `install.packages` function. You should input installation commands into your console (as opposed to `live_notes.R`) since once a package is installed on your computer, you won't need to re-install it again.
 
-You should have installed the following packages prior to the workshop. However, if you did not, here is the code again. `tidyverse` is a meta-package containing several packages useful in data manipulation and plotting. `ggrepel` contains functions to modify `ggplot` plots.
+You should have installed the following packages prior to the workshop. However, if you did not, here is the code again. `tidyverse` is a meta-package containing several packages useful in data manipulation and plotting.
 
 You **DO NOT** need to run this again if you did so as part of the setup instructions. 
 
 ```{r eval=FALSE}
 install.packages("tidyverse")
-install.packages("ggrepel")
 ```
 
 After installing a package, and *every time* you open a new RStudio session, the packages you want to use need to be loaded into the R workspace with the `library` function. This tells R to access the package's functions and prevents RStudio from lags that would occur if it automatically loaded every downloaded package every time you opened it. To put this in perspective, I had `r length(installed.packages(.Library, priority = "high"))` packages installed at the time this document was made.
@@ -105,7 +108,7 @@ Because `tidyverse` is a meta-package, it automatically tells you want packages 
 install.packages("BiocManager")
 ```
 
-Then install your package of choice using the `BiocManager` installer. Again, you did this in the setup instructions but the code is here again for reference. We install `limma`, a package for analysis of microarray and RNA-seq data.
+Then install your package of choice using the `BiocManager` installer. We install `limma`, a package for analysis of microarray and RNA-seq data.  Again, you did this in the setup instructions but the code is here again for reference.
 
 *If prompted*, say `a` to "Update all/some/none? [a/s/n]" and `no` to "Do you want to install from sources the packages which need compilation? (Yes/no/cancel)"
 
@@ -125,7 +128,7 @@ set.seed(4389)
 
 ### Organize data
 
-Create a directory *inside* your project directory called `data` and move the data files into this directory. You can do this in your regular point-and-click file explorer.
+Move the `data/` directory you downloaded *inside* your project directory. You can do this in your regular point-and-click file explorer.
 
 ### Loading data into R
 ### Data frames from `.csv`, `.tsv`, etc.
@@ -148,10 +151,10 @@ We will store the data as an *object* named `meta` using the assignment operator
 
 ```{r}
 # read the data and save it as an object
-meta <- read.table(file="data/metadata.csv", sep=",", header=TRUE)
+meta_csv <- read.table(file="data/metadata.csv", sep=",", header=TRUE)
 ```
 
-Now whenever we want to use these data, we simply call `meta`
+Now whenever we want to use these data, we simply call `meta_csv`
 
 ### Help function
 
@@ -165,7 +168,7 @@ You will notice that there are multiple functions of the `read.table` help page.
 
 ```{r eval=FALSE}
 # read the data with different function
-meta <- read.csv(file="data/metadata.csv")
+meta_csv <- read.csv(file="data/metadata.csv")
 ```
 
 ### Complex data from `.RData`
@@ -173,15 +176,15 @@ meta <- read.csv(file="data/metadata.csv")
 You may have data that do not fit nicely into a single table or into a table at all (like plots). You can save these as `.RData`, which can be loaded directly into R. You can also save multiple tables and/or other objects in a single `.RData` file to make loading your data quick and easy. Moreover, `.RData` are automatically compressed so they take up less storage space than multiple tables.
 
 ```{r}
-load("data/dat_voom.RData")
+load("data/metadata.RData")
 ```
 
-Notice that these data appear already named in your R environment as `dat`. Object names are determined when saving so be sure to create short but descriptive names before saving to `.RData`.
+Notice that these data appear already named in your R environment as `meta`. Object names are determined when saving so be sure to create short but descriptive names before saving to `.RData`.
 
 ## Data types
 ### Simple
 
-Let's return to the simpler metadata for now. This data frame consists of `r nrow(meta)` rows (observations) and `r ncol(meta)` columns (variables). You can see this quickly using the dimension function `dim`
+Note that `meta` and `meta_csv` are the same data, just loaded from different files. Because the name is slightly shorter, we will explore `meta` for most of this section. This data frame consists of `r nrow(meta)` rows (observations) and `r ncol(meta)` columns (variables). You can see this quickly using the dimension function `dim`
 
 ```{r}
 dim(meta)
@@ -194,17 +197,35 @@ Each column and each row of a data frame are individual R vectors. R vectors are
 meta$ptID
 ```
 
-R objects have several different classes (types). Our data frame contains 4 R data types. The base R `class` function will tell you what data type an object is.
+R objects have several different classes (types). Our data frame contains 5 R data types. The base R `class` function will tell you what data type an object is.
 
 ```{r}
 class(meta)
 class(meta$ptID)
+class(meta$condition)
+```
+
+We see that our `ptID` column is `character`, meaning it is non-numeric letters and characters. `condition` is a `factor`, meaning it is a character variable with discrete levels. A `character` variable can be anything while a `factor` can only be one of a set of pre-defined levels.
+
+```{r}
+meta$condition
+class(meta$condition)
+
+meta_csv$condition
+class(meta_csv$condition)
+```
+
+One advantage of `.RData` is that is saves formatting not found in a `.csv`. Here, we see that the `condition` variable in `meta_csv` contains the same data as `meta` but `meta` from the `.RData` has `factor` formatting. Thus, `.RData` are a good way to save your data when you have factors or other within R formatting.
+
+```{r}
 class(meta$age_dys)
 class(meta$total_seq)
 class(meta$RNAseq)
 ```
 
-We see that our `ptID` column is `character`, meaning it is non-numeric letters and characters. On the other hand, `age_dys` is `numeric`, meaning a number, and `total_seq` is `integer`, meaning a whole number with no decimals. Finally, `RNAseq` is `logical` meaning TRUE/FALSE - which need to be all caps for R to recognize them as such.
+Continuing on, `age_dys` is `numeric`, meaning a number, and `total_seq` is `integer`, meaning a whole number with no decimals. 
+
+Finally, `RNAseq` is `logical` meaning TRUE/FALSE - which need to be all caps for R to recognize them as such.
 
 You can see the entire structure of the data with `str`.
 
@@ -212,39 +233,24 @@ You can see the entire structure of the data with `str`.
 str(meta)
 ```
 
-Another, common data type not found in these data is `factor`, non-numeric value with a set number of unique levels. We will see `factor` in the `ggplot` section.
-
 ### Complex (`S3`, `S4`)
 
-Now, let's look at the `dat` data. These data are in `S3` format meaning they have 3 dimensions. `S3` data are a list of multiple data frames, vectors, plots, etc. In the case of `dat`, there are a specific class from the `limma` package called `EList` for expression list. 
+We will not use this data type today. However, you may encounter it in our other workshops or in your own work.
 
-```{r}
-class(dat)
-```
+`S3` and `S4` formats mean the data have > 2 dimensions. `S3` data are a list of multiple data frames, vectors, plots, etc. `S4` data can be lists or other specialty data types specific to an R package.
 
-If you click on the `dat` object in your Environment tab, you will see multiple pieces.
+For example, RNA-seq data can be contained in an `S3` object from the `limma` package. This type of data is called an `EList` for "expression list" and contains data frames with gene metadata (`genes`), sample metadata (`targets`), normalized expression values (`E`), and others.
 
 ![](images/S3_obj.png)
 
-In these data, pieces are data frames or matrices. You can again see this with `class`, only this time you specify a part of the `dat` object with `$`
+Similar to our `meta` data, you access pieces of an `S3` object with `$` only now, you can have multiple levels to go from the list object `data` to each data frame like `targets` to each column in that data frame like `ptID`. *You should not run this code as you have not loaded the `dat` object in this workshop.*
 
-```{r}
-class(dat$genes)
-class(dat$E)
-class(dat$targets)
-class(dat$weights)
-class(dat$design)
+```{r eval=FALSE}
+dat$genes
+dat$targets$ptID
 ```
 
-Notice that you get the message `Loading required package: limma`. If you did not have `limma` installed, you could not work with these data because they are a data type specific to `limma`. Hence, why we installed this package previously.
-
-Or going deeper, you can specify one column in the `genes` data frame
-
-```{r}
-class(dat$genes$hgnc_symbol)
-```
-
-Of note, working with `S4` objects is very similar to `S3` except that they are accessed with `@` instead of `$`. However, we will not use `S4` in this workshop.
+Working with `S4` objects is very similar to `S3` except that they are accessed with `@` instead of `$`. Again, we will not use these data types here and you can explore them further in more advanced workshops.
 
 ## Working with vectors and data frames
 ### Operating on vectors
@@ -259,8 +265,11 @@ var(meta$total_seq)
 meta$total_seq > 10E6
 
 # Find the unique values of metadata's condition
+unique(meta$sex)
 unique(meta$condition)
 ```
+
+Note the difference between a character (`sex`) and a factor here (`condition`).
 
 ### Using the correct class
 
@@ -296,7 +305,7 @@ logical.vector
 meta[logical.vector, ]
 ```
 
-Subsetting is extremely useful when working with large data. We will learn more complex subsets on day 2 using the tidyverse. But first...
+Subsetting is extremely useful when working with large data. Please find a reference of common statements used in subsetting below. You can also learn the `tidyverse` way to subset and work with data in our workshop [Intro to R and tidyverse](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/index.html).
 
 ### Quick reference: Conditional statements
 
@@ -331,18 +340,12 @@ Using the `meta` data frame:
 
 * [Workshop index][index]
 * Previous lesson: [Setup and installation][lesson0]
-* Next lesson: [Data manipulation in dplyr and tidyr][lesson2]
+* Suggested next lesson: [Data manipulation in dplyr and tidyr][lesson2]
 * [Lesson source code][lesson1rmd]
 
 ***
 
-[index]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/index.html
-[lesson0]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/0_setup.html
-[lesson1]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/1_introR.html
+[index]: https://bigslu.github.io/workshops/
+[lesson0]: https://bigslu.github.io/workshops/setup/setup.html
 [lesson2]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/2_tidyverse.html
-[lesson3]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/3_ggplot.html
-[lesson1rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/1_introR.Rmd
-[lesson2rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/2_tidyverse.Rmd
-[lesson3rmd]: https://github.com/BIGslu/workshops/blob/main/2022.08.15_R.tidyverse.workshop/3_ggplot.Rmd
-
-[workshop]: https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/R_tidyverse_RNAseq_edition.html
+[lesson1rmd]: https://github.com/BIGslu/workshops/blob/main/introR.workshop/introR.Rmd
