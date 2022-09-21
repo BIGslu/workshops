@@ -1,0 +1,48 @@
+---
+title: "Additional resources"
+author: "Kim Dill-McFarland"
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+```{r include=FALSE}
+knitr::opts_chunk$set(fig.width = 3, fig.height = 3)
+```
+
+## General R resources
+
+* [R cheatsheets](https://www.rstudio.com/resources/cheatsheets/) also available in RStudio under Help > Cheatsheets
+* [TidyTuesday](https://github.com/rfordatascience/tidytuesday) A weekly plotting challenge
+
+## Workshops
+
+* BioInformatics Group at South Lake Union ([BIGslu](https://bigslu.github.io/workshops/)) for R and git
+* [The Carpentries](https://software-carpentry.org/lessons/) for Unix, R, python, git, and more!
+* [Swirl](http://swirlstats.com/scn/title.html) for interactive R courses
+* [EDUCE](https://educe-ubc.github.io/workshops/) at the U of British Columbia for R with a focus on microbiome data and statistics
+* [Riffomonas](https://www.riffomonas.org/code_club/) Dr. Pat Schloss's coding club with open-source materials and recordings
+
+## Groups and meetups
+
+* [R-Ladies Seattle](https://rladiesseattle.org/) and our [events page](https://www.meetup.com/rladies-seattle/)
+* Or find your local R-Ladies chapter at <https://www.meetup.com/pro/rladies/>
+* [Seattle useR Group](https://www.meetup.com/Seattle-useR/)
+
+## RNA-seq data analysis
+
+* [SEAsnake](https://bigslu.github.io/SEAsnake/vignette/SEAsnake_vignette.html) for processing fastq sequences to counts data used in our workshops
+    * Software at <https://github.com/BIGslu/SEAsnake>
+* [kimma](https://bigslu.github.io/kimma_vignette/) for flexible mixed effects model design [under construction]
+* [limma](http://bioconductor.org/packages/devel/bioc/vignettes/limma/inst/doc/usersguide.pdf) for linear modeling (Chapter 15: RNA-Seq Data)
+    * [voom weights](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2014-15-2-r29) for correcting for sample and gene quality
+* [dream](https://www.bioconductor.org/packages/devel/bioc/vignettes/variancePartition/inst/doc/dream.html) for paired sample designs
+
+
+***
