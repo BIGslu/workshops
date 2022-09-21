@@ -18,4 +18,8 @@
 
 ## Recordings
 
-Videos available at <https://www.youtube.com/channel/UCK6gLccwvmVYYgJPoD1EIvw/playlists> Note that not all workshops above have an associated recording.
+Videos available at <https://www.youtube.com/c/KimDillMcFarland> Note that not all workshops above have an associated recording.
+
+## Additional resources
+
+Please see our [additional resources](https://bigslu.github.io/workshops/setup/addtl_resources.html) page for more R!
