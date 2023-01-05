@@ -2,7 +2,7 @@
 
 ### Description
 
-This workshop introduces popular data visualization methods for single cell RNA-seq data. Specifically, we will cover the Seurat data format, UMAP/tSNE, and heatmaps.
+This workshop introduces popular data visualization methods for single cell RNA-seq data. Specifically, we will cover UMAP/tSNE and heatmaps.
 
 ### Pre-requisites
 
