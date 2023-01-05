@@ -95,7 +95,7 @@ After installing a package, and *every time* you open a new RStudio session, the
 library(tidyverse)
 ```
 
-Because `tidyverse` is a meta-package, it automatically tells you want packages it is loading and their versions. In addition, the Conflicts section let's you know  functions in the `tidyverse` that alter exist in your R session. Because you chose to load the package, calling the function `filter` will use the `tidyverse` function not the `stats` function (which comes with base R). If you for some reason needed the `stats` version, you can specify it with `package::` like `stats::filter`.
+Because `tidyverse` is a meta-package, it automatically tells you what packages it is loading and their versions. In addition, the Conflicts section let's you know  functions in the `tidyverse` that alter exist in your R session. Because you chose to load the package, calling the function `filter` will use the `tidyverse` function not the `stats` function (which comes with base R). If you for some reason needed the `stats` version, you can specify it with `package::` like `stats::filter`.
 
 #### Bioconductor
 
