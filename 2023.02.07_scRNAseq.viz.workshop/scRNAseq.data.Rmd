@@ -1,0 +1,117 @@
+---
+title: "Single cell RNA-seq data visualization"
+subtitle: "Data cleaning"
+author: "Kim Dill-McFarland"
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+```{r include=FALSE}
+knitr::opts_chunk$set(fig.width = 3, fig.height = 3)
+```
+
+# Description
+
+This document details basic data cleaning of single cell RNA-seq from human PBMC. The cleaned data are used in the subsequent data visualization workshop
+
+Learn more about each step in the [Seurat tutorial][seurat_tut].
+
+# Setup
+
+```{r}
+set.seed(4389)
+```
+
+```{r}
+library(Seurat)
+```
+
+# Seurat data
+## Download data
+
+We will use example data provided by 10X. Please [download the data](https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz), unzip it, and place the *entire* directory in your project directory.
+
+These data include:
+
+* `barcodes`: single cell ID barcodes
+* `genes`: gene metadata including ENSEMBL ID and HGNC symbols
+* `matrix`: single cell gene counts
+
+## Load data
+
+Direct Seurat to the data directory you downloaded and create a Seurat object. Perform basic filtering to remove features (genes) detected in < 3 cells and remove cells with < 200 features.
+
+```{r}
+# Load data
+pbmc.data <- Read10X(data.dir = "filtered_gene_bc_matrices/hg19/")
+# Initialize the Seurat object with the raw (non-normalized data).
+pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k",
+                           min.cells = 3, min.features = 200)
+pbmc
+```
+
+## Clean data
+
+Perform basic data cleaning including removing poor-quality cells and duplets. Log normalize the data.
+
+```{r}
+#Calculate % mitochondrial
+pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+#Filter 
+pbmc <- subset(pbmc, subset = 
+                 nFeature_RNA > 200 & 
+                 nFeature_RNA < 2500 & 
+                 percent.mt < 5)
+#Log normalize
+pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize")
+```
+
+Identify highly variable features.
+
+```{r}
+#Find highly variable features
+pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
+```
+
+Scale expression to mean 0 and variance 1.
+
+```{r}
+#scale data
+pbmc <- ScaleData(pbmc, features = rownames(pbmc))
+```
+
+## Cluster data
+
+```{r}
+#Perform PCA
+pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+#Find clusters
+pbmc <- FindNeighbors(pbmc, dims = 1:10)
+pbmc <- FindClusters(pbmc, resolution = 0.5)
+```
+
+## Save clean data
+
+```{r}
+save(pbmc, file = "pbmc_clean.RData")
+```
+
+# *Navigation*
+
+* [Single cell visualization workshop][lesson2]
+* [Other workshops][index]
+* [Lesson source code][lessonrmd]
+
+***
+
+[index]: https://bigslu.github.io/workshops/
+[lessonrmd]: https://bigslu.github.io/workshops/2023.02.07_scRNAseq.viz.workshop/scRNAseq.data.Rmd
+[seurat_tut]: https://satijalab.org/seurat/articles/pbmc3k_tutorial.html
+[lesson2]: https://bigslu.github.io/workshops/2023.02.07_scRNAseq.viz.workshop/scRNAseq.viz.html
