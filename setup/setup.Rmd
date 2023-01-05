@@ -41,7 +41,7 @@ When you open RStudio, it should look like so with multiple panels. If you see o
 
 ## Install R packages
 
-Install R packages by running a script in your R console in RStudio (left panel in the above image). Each workshop has an overlapping but unique list of packages. Please select the appropriate script from those below.
+Install R packages by running a script in your R console in RStudio (left panel in the above image). Each workshop has an overlapping but unique list of packages. **Please select the appropriate script for your workshop from those below.**
 
 *If prompted*, say `a` to "Update all/some/none? [a/s/n]" and `no` to "Do you want to install from sources the packages which need compilation? (Yes/no/cancel)"
 
@@ -113,6 +113,14 @@ devtools::install_github("BIGslu/kimma")
 ```{r eval=FALSE}
 # CRAN packages
 install.packages(c("devtools", "usethis", "roxygen2"))
+```
+
+#### Single-cell RNA-seq data visualization
+
+```{r eval=FALSE}
+#CRAN packages
+install.packages("tidyverse")
+install.packages("Seurat")
 ```
 
 ## Check R package install
