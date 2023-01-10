@@ -121,6 +121,9 @@ install.packages(c("devtools", "usethis", "roxygen2"))
 #CRAN packages
 install.packages("tidyverse")
 install.packages("Seurat")
+#Bioconductor packages
+install.packages("BiocManager")
+BiocManager::install("ComplexHeatmap")
 ```
 
 ## Check R package install
