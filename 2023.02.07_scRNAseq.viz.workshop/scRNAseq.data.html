@@ -1493,7 +1493,7 @@ font-size: 0.95em;
 <h1 class="title toc-ignore">Single cell RNA-seq data visualization</h1>
 <h3 class="subtitle">Data cleaning</h3>
 <h4 class="author">Kim Dill-McFarland</h4>
-<h4 class="date">version January 05, 2023</h4>
+<h4 class="date">version January 12, 2023</h4>
 
 </div>
 
@@ -1618,10 +1618,24 @@ pbmc &lt;- FindNeighbors(pbmc, dims = 1:10)</code></pre>
 ## Maximum modularity in 10 random starts: 0.8723
 ## Number of communities: 9
 ## Elapsed time: 0 seconds</code></pre>
+<div id="gene-markers-of-clusters" class="section level3">
+<h3>Gene markers of clusters</h3>
+<pre class="r"><code>pbmc_markers &lt;- FindAllMarkers(pbmc, only.pos = TRUE,
+                               min.pct = 0.25, logfc.threshold = 0.25)</code></pre>
+<pre><code>## Calculating cluster 0</code></pre>
+<pre><code>## Calculating cluster 1</code></pre>
+<pre><code>## Calculating cluster 2</code></pre>
+<pre><code>## Calculating cluster 3</code></pre>
+<pre><code>## Calculating cluster 4</code></pre>
+<pre><code>## Calculating cluster 5</code></pre>
+<pre><code>## Calculating cluster 6</code></pre>
+<pre><code>## Calculating cluster 7</code></pre>
+<pre><code>## Calculating cluster 8</code></pre>
+</div>
 </div>
 <div id="save-clean-data" class="section level2">
 <h2>Save clean data</h2>
-<pre class="r"><code>save(pbmc, file = &quot;pbmc_clean.RData&quot;)</code></pre>
+<pre class="r"><code>save(pbmc, pbmc_markers, file = &quot;pbmc_clean.RData&quot;)</code></pre>
 </div>
 </div>
 <div id="navigation" class="section level1">

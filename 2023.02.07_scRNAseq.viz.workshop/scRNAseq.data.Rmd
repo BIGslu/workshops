@@ -97,10 +97,17 @@ pbmc <- FindNeighbors(pbmc, dims = 1:10)
 pbmc <- FindClusters(pbmc, resolution = 0.5)
 ```
 
+### Gene markers of clusters
+
+```{r}
+pbmc_markers <- FindAllMarkers(pbmc, only.pos = TRUE,
+                               min.pct = 0.25, logfc.threshold = 0.25)
+```
+
 ## Save clean data
 
 ```{r}
-save(pbmc, file = "pbmc_clean.RData")
+save(pbmc, pbmc_markers, file = "pbmc_clean.RData")
 ```
 
 # *Navigation*
