@@ -119,7 +119,7 @@ install.packages(c("devtools", "usethis", "roxygen2"))
 
 ```{r eval=FALSE}
 #CRAN packages
-install.packages("tidyverse")
+install.packages(c("tidyverse", "circlize", "ggalluvial"))
 install.packages("Seurat")
 #Bioconductor packages
 install.packages("BiocManager")
