@@ -1,0 +1,607 @@
+---
+title: "Single cell RNA-seq data visualization"
+author: "Kim Dill-McFarland"
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+editor_options:
+  chunk_output_type: console
+---
+```{r include=FALSE}
+knitr::opts_chunk$set(fig.width = 3, fig.height = 3)
+```
+
+# Description
+
+This workshop introduces popular data visualization methods for single cell RNA-seq data. Specifically, we will cover UMAP/tSNE and heatmaps.
+
+During the workshop, we will build an R script together, which will be posted as 'live_notes' after the workshop at <https://github.com/BIGslu/workshops/tree/main/2023.02.07_scRNAseq.viz.workshop>
+
+# Prior to this workshop
+
+Please following the setup instructions at <https://bigslu.github.io/workshops/setup/setup.html>
+
+If you are brand new to R, we recommend completely our 1-hour Introduction to R workshop to prepare, <https://bigslu.github.io/workshops/introR.workshop/introR.html>
+
+# Setup
+## R project and script
+
+Create a new R project and new R script to save your code. See [Intro R](https://bigslu.github.io/workshops/introR.workshop/introR.html) for more information if you are unfamiliar with these.
+
+## Load packages
+
+You should have installed packages prior to the workshop. For more information on installation, see the [setup instructions][setup].
+
+*Every time* you open a new RStudio session, the packages you want to use need to be loaded into the R workspace with the `library` function. This tells R to access the package's functions and prevents RStudio from lags that would occur if it automatically loaded every downloaded package every time you opened it. To put this in perspective, I had `r length(installed.packages(.Library, priority = "high"))` packages installed at the time this document was made.
+
+```{r}
+library(tidyverse)
+```
+
+Because `tidyverse` is a meta-package, it automatically tells you what packages it is loading and their versions. In addition, the Conflicts section let's you know  functions in the `tidyverse` that alter exist in your R session. Because you chose to load the package, calling the function `filter` will use the `tidyverse` function not the `stats` function (which comes with base R). If you for some reason needed the `stats` version, you can specify it with `package::` like `stats::filter`.
+
+```{r}
+library(Seurat)
+library(ComplexHeatmap)
+library(circlize)
+```
+
+These packages automatically print some information of dependencies, citation, etc. You don't need to worry about these messages.
+
+```{r}
+library(ggalluvial)
+```
+
+And finally, these packages load silently.
+
+## Download and load data
+
+We will use example data provided by 10X. These data were pre-cleaned and normalized for this workshop so we can get right to plotting! You can see the cleaning steps in [this markdown][lesson1] with more information in the [Seurat tutorial][seurat_tut].
+
+Please [download the data](https://github.com/BIGslu/workshops/raw/main/2023.02.07_scRNAseq.viz.workshop/pbmc_clean.RData) and place the `RData` file in your project directory.
+
+Then, load the data into R.
+
+```{r}
+load("pbmc_clean.RData")
+```
+
+# Data quality
+
+First let's explore the final data quality. While `Seurat` has a number of plotting functions, we will also build a plot from scratch so that you can further customize as needed.
+
+The percent mitochondrial data are contained in the data frame `pbmc[["percent.mt"]]`. See the [data cleaning notes][#lesson1] for how this metric was calculated.
+
+```{r}
+class(pbmc[["percent.mt"]])
+head(pbmc[["percent.mt"]])
+```
+
+## Violin plot
+
+`Seurat` provides an easy way to make violin plots with `VlnPlot`.
+
+```{r}
+VlnPlot(pbmc, features = "percent.mt", group.by = "orig.ident")
+```
+
+Now let's recapitulate this plot in `ggplot`. Ggplot uses layers connected by `+` to progressively build more and more complex and customized plots. To start, we create a simple dot plot but we see that this is not very readable since there are so many data points (one per cell in the data set).
+
+```{r}
+ggplot(data = pbmc[["percent.mt"]]) +
+  aes(x = 1, y = percent.mt) +
+  geom_point()
+```
+
+We can improve readability by jittering the points on the x axis.
+
+```{r}
+ggplot(data = pbmc[["percent.mt"]]) +
+  aes(x = 1, y = percent.mt) +
+  geom_jitter(height = 0, width = 0.2)
+```
+
+#### About random seeds
+
+Your exact jitter plot will look different than mine. This is because this function uses a random seed to determine the x-axis values. You can force a reproducible plot by specifically setting the random seed.
+
+The most common seeds are 0, 1, 123, and 42. You can use any number and change it up between scripts if you'd like.
+
+```{r}
+set.seed(4389)
+ggplot(data = pbmc[["percent.mt"]]) +
+  aes(x = 1, y = percent.mt) +
+  geom_jitter(height = 0, width = 0.2)
+```
+
+#### An alternative to jitter
+
+Alternatively, you can improve readability by using a bee swarm. Checkout more in the [`ggbeeswarm` package](https://r-charts.com/distribution/ggbeeswarm/).
+
+Next, we add a violin by adding another layer. Here, we return to the jitter version as this is more similar to `Seurat` plots.
+
+```{r}
+ggplot(data = pbmc[["percent.mt"]]) +
+  aes(x = 1, y = percent.mt) +
+  geom_jitter(height = 0, width = 0.4) +
+  geom_violin()
+```
+
+Oh no! Our violin trends covers up our points. This is because ggplot adds layers progressively. We easily fix this by calling the violin layer *before* the swarm layer.
+
+```{r}
+ggplot(data = pbmc[["percent.mt"]]) +
+  aes(x = 1, y = percent.mt) +
+  geom_violin() +
+  geom_jitter(height = 0, width = 0.4)
+```
+
+Finally, let's customize the plot to look like the `Seurat` version. Checkout the other workshops at this end of this document to learn more about ggplot customization.
+
+```{r}
+ggplot(data = pbmc[["percent.mt"]]) +
+  aes(x = 1, y = percent.mt) +
+  geom_violin(fill = "salmon") + #Add color to violin
+  geom_jitter(height = 0, width = 0.4, size = 0.5) + #Make points smaller
+  #Add nice labels
+  labs(x = "Identity pbmc3k", 
+       y = "",
+       title = "percent.mt") +
+  #Format background and axes
+  theme_classic() +
+  #Remove meaningless x-axis values
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x = element_blank())
+```
+
+## Practice violin plot
+
+* Further customize the mitochondrial plot by adding a horizontal line showing the 5% cutoff used in data clean. *Hint*: checkout `geom_hline( )`
+* Make a violin plot showing the number of RNA features per cell. These data are in `pbmc[["nFeature_RNA"]]` and our original quality filtering retained cells with 200 - 2500 features.
+
+```{r include=FALSE}
+knitr::opts_chunk$set(fig.width = 5, fig.height = 4)
+```
+
+# Ordination
+
+Ordination simplifies the multi-dimensional gene expression data to a small number of latent variables that can be plotted on a simple XY plane. You may be familiar with principle component analysis (PCA) which is linear ordination. Single cell data performs better with non-linear ordinations like those described below.
+
+In our ordination plots, we will color cell clusters and differentially expressed genes determined in the [data cleaning notes][#lesson1].
+
+## UMAP
+
+Uniform Manifold Approximation and Projection (UMAP) is one possible non-linear ordination. We, unfortunately, don't have time to go into the math but you can learn more in [McInnes et al](https://doi.org/10.48550/arXiv.1802.03426).
+
+Let's make a UMAP before discussing more. First, calculate the UMAP for 10 axes (i.e. latent variables).
+
+```{r}
+pbmc <- RunUMAP(pbmc, dims = 1:10)
+```
+
+#### Error with UMAP
+
+Sometimes UMAP is not automatically installed with `Seurat`. If you get an error, try unloading the package, installing UMAP, and re-loading the package.
+
+```{r eval=FALSE}
+detach("package:Seurat", unload = TRUE)
+reticulate::py_install(packages = 'umap-learn')
+library(Seurat)
+```
+
+`Seurat` can quickly plot the results with `DimPlot`.
+
+```{r}
+DimPlot(pbmc, reduction = "umap", group.by = "orig.ident")
+```
+
+And further color the pre-determined cell clusters.
+
+```{r}
+DimPlot(pbmc, reduction = "umap", group.by = "ident")
+```
+
+Next, we can re-capitulate this plot in ggplot. We do some data wrangling in the `tidyverse` to extract and format all the data we need. See the other workshops at the end of this document to learn more about the `tidyverse`.
+
+```{r}
+#Extract the XY values for UMP
+umap_xy <- as.data.frame(pbmc[["umap"]]@cell.embeddings)
+#Add cell cluster information
+cell_clusters <- as.data.frame(pbmc$seurat_clusters)
+#Combine
+umap_xy_clusters <- umap_xy %>% 
+  #move rownames to data column
+  rownames_to_column("cell") %>% 
+  #merge with cluster info
+  full_join(
+    cell_clusters %>% rownames_to_column("cell")
+  ) %>% 
+  #clean column names
+  rename(ident = `pbmc$seurat_clusters`)
+
+head(umap_xy_clusters)
+```
+
+Then plot!
+
+```{r}
+ggplot(data = umap_xy_clusters) +
+  aes(x = UMAP_1, y = UMAP_2) +
+  geom_point(size = 0.5) +
+  aes(color = ident) +
+  labs(title = "ident", color = "") +
+  theme_classic()
+```
+
+### Highlight specific genes
+
+We can plot gene expression per cell on the ordination. In `Seurat`, you list the gene(s) (i.e. features) and it does so with `FeaturePlot`
+
+```{r fig.width=10}
+FeaturePlot(pbmc, reduction = "umap", features = c("LYZ", "MS4A1"))
+```
+
+Or we can extract and manipulate the `pbmc` data to make a similar plot ourselves.
+
+```{r}
+#Define gene of interest
+genes_of_interest <- c("LYZ", "MS4A1")
+
+#Extract normalized gene expression data
+pbmc_counts <- as.data.frame(GetAssayData(
+  object = pbmc, slot = "counts"))
+#Filter for gene of interest
+umap_xy_expression <- pbmc_counts %>% 
+  rownames_to_column("gene") %>% 
+  filter(gene %in% genes_of_interest) %>% 
+  #long format
+  pivot_longer(-gene, names_to = "cell") %>% 
+  #combine with UMAP data
+  full_join(umap_xy_clusters)
+
+head(umap_xy_expression)
+```
+
+```{r fig.width=10}
+ggplot(data = umap_xy_expression) +
+  aes(x = UMAP_1, y = UMAP_2) +
+  geom_point(size = 0.5) +
+  aes(color = value) + #Color by expression
+  scale_color_gradient(low = "lightgrey", 
+                       high = "blue") + #Change colors
+  facet_wrap(~ gene, scales = "free") + #Split by gene
+  labs(color = "") +
+  theme_classic()
+```
+
+*Note* that the ggplot version has a single color scale across all facets of the plot. This is helpful in cases where the ranges of gene expression are similar (like here) but can mask differences if scales are wildly different. If you want two separate scales, we recommend making two separate ggplots.
+
+## tSNE
+
+Similarly, we can use the tSNE algorithm to plot these data in `Seurat`.
+
+```{r}
+pbmc <- RunTSNE(pbmc, dims = 1:10)
+
+DimPlot(pbmc, reduction = "tsne", group.by = "ident")
+```
+
+Or make the plot from scratch.
+
+```{r}
+#Extract the XY values for UMP
+tsne_xy <- as.data.frame(pbmc[["tsne"]]@cell.embeddings)
+#Use the same cell clusters as UMAP
+#Combine
+tsne_xy_clusters <- tsne_xy %>% 
+  #move rownames to data column
+  rownames_to_column("cell") %>% 
+  #merge with cluster info
+  full_join(
+    cell_clusters %>% rownames_to_column("cell")
+  ) %>% 
+  #clean column names
+  rename(ident = `pbmc$seurat_clusters`)
+
+head(tsne_xy_clusters)
+```
+
+```{r}
+ggplot(data = tsne_xy_clusters) +
+  aes(x = tSNE_1, y = tSNE_2) +
+  geom_point(size = 0.5) +
+  aes(color = ident) +
+  labs(title = "ident", color = "") +
+  theme_classic()
+```
+
+## Practice ordination
+
+* Color gene expression of CD14 and CD8A in the tSNE ordination
+* Change the color scale of one UMAP or tSNE to your colors of choice! Checkout <https://colorbrewer2.org/> and <https://davidmathlogic.com/colorblind/> for some accessible color examples.
+
+# Heatmap
+
+You may wish to visualize expression of more genes than is reasonable to show in individual ordinations. Heatmaps are one option to show a lot of data in a small space.
+
+Here, we will plot the expression of the top 3 marker genes in clusters. Gene markers of clusters were determined in [data cleaning notes][#lesson1] and are contained in `pbmc_markers`
+
+```{r}
+top3 <- pbmc_markers %>%
+  group_by(cluster) %>%
+  top_n(n = 3, wt = avg_log2FC)
+
+head(top3)
+```
+
+```{r}
+DoHeatmap(pbmc, features = top3$gene)
+```
+
+*Note* that by default, this function only shows data with log expression from -2.5 to 2.5. Anything outside this range is set to this minima or maxima. This is an important distinction as your gene of interest may not fall within the range. You can change this range with the parameters `disp.min` and `disp.max`. It is rare that you'll need to change the minimum given the log transformation but the maximum is low for some genes.
+
+For example, to plot all of the data for our top 3 genes, we need to increase the maximum to 10. However, this makes the scale less readable and may point to a need for additional data cleaning as these high values are likely outliers.
+
+```{r}
+DoHeatmap(pbmc, features = top3$gene, disp.max = 10)
+```
+
+To create the default `Seurat` heatmap from scratch, there are *a lot* of R package options. Many people have their favorites and some packages have some features, some have others. Here, we will use `ComplexHeatmap`, because it can do nearly everything you can think of in heatmaps. However, the trade-off if that it's syntax is somewhat confusing. There is an extensive [reference for ComplexHeatmap](https://jokergoo.github.io/ComplexHeatmap-reference/book/) that will help you continue to customize heatmaps in the future.
+
+First, we must extract and reformat the data. `ComplexHeatmap` takes an input matrix that looks mostly like the final heatmap, e.g. the rows are genes and the columns are cells. Unfortunately, the `pbmc_markers` data from `Seurat` does not contain cell level expression (just averages), so we must go to the normalized expression data in `pbmc`.
+
+We extract these data similar to the raw counts we used in ordination only now we get the log-scaled data to be consistent with the `Seurat` heatmap.
+
+```{r}
+pbmc_counts_log <- as.data.frame(GetAssayData(
+  object = pbmc, 
+  slot = "scale.data"))
+```
+
+Filter these data for the top cluster genes, recode outlier values to 2.5, order cells and genes by cluster, and convert to a matrix with rownames.
+
+```{r}
+#Order cells by clusters. Remember that we originally 
+# got these data from as.data.frame(pbmc$seurat_clusters)
+cell_order <- cell_clusters %>% 
+  arrange(`pbmc$seurat_clusters`)
+
+pbmc_counts_log_top3 <- pbmc_counts_log %>% 
+  #Filter top genes
+  rownames_to_column("gene") %>% 
+  filter(gene %in% top3$gene) %>% 
+  #Remove outliers
+  mutate_if(is.numeric, ~ifelse(. > 2.5, 2.5, .)) %>% 
+  #Reorder cells
+  select(gene, all_of(rownames(cell_order))) %>% 
+  #Reorder genes
+  mutate(gene = factor(gene, levels = top3$gene)) %>% 
+  arrange(gene) %>% 
+  #Convert to matrix
+  column_to_rownames("gene") %>% 
+  as.matrix()
+```
+
+Then create a default `ComplexHeatmap`. We turn off clustering to keep the order the same as the original matrix.
+
+```{r}
+Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
+        cluster_rows = FALSE, cluster_columns = FALSE)
+```
+
+Now, let's modify the heatmap to look more like `Seurat`.
+
+```{r}
+#Make color scale to span the data values
+#Force black center at 0.5 to match Seurat
+col_min <- min(pbmc_counts_log_top3, na.rm = TRUE)
+col_max <- max(pbmc_counts_log_top3, na.rm = TRUE)
+col_fun <- colorRamp2(c(col_min, 0.5, col_max),
+                      c("magenta", "black", "yellow"))
+
+#Format cluster annotation
+hm_clusters <- cell_order$`pbmc$seurat_clusters`
+names(hm_clusters) <- rownames(cell_order)
+
+#Make cluster colors the same as ggplot default
+hm_colors <- scales::hue_pal()(9)
+names(hm_colors) <- as.character(c(0:8))
+
+#Format ComplexHeatmap annotation
+#This is the not great syntax that the reference can help with
+hm_anno <- HeatmapAnnotation(
+  Identity = hm_clusters,
+  col = list(Identity = hm_colors),
+  show_annotation_name = FALSE)
+
+#Make heatmap
+Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
+        cluster_rows = FALSE, cluster_columns = FALSE,
+        name = "Expression",
+        column_split = hm_clusters,
+        col = col_fun, #recolor
+        show_column_names = FALSE, #remove cell (column) labels
+        row_names_side = "left", #move gene (row) labels
+        top_annotation = hm_anno) #add cluster annotation
+```
+
+## Heatmap clustering
+
+The Seurat clustering above is aimed at grouping the cell clusters in numeric order. However, you can glean more information by with hierarchical clustering from the actual expression data. 
+
+For example, if you cluster across all genes and within each cluster, we see that clusters 5 and 1 are very similar except in the gene FCGR3A.
+
+```{r}
+Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
+        cluster_rows = TRUE, cluster_columns = TRUE, #Turn clustering on
+        name = "Expression",
+        column_split = hm_clusters,
+        col = col_fun, #recolor
+        show_column_names = FALSE, #remove cell (column) labels
+        row_names_side = "left", #move gene (row) labels
+        top_annotation = hm_anno #add cluster annotation
+        )
+```
+
+Or if we allow completely de novo clustering, we see that some cell clusters group well given only this gene set while others do not and likely require more marker genes to resolve.
+
+```{r}
+Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
+        cluster_rows = TRUE, cluster_columns = TRUE, #Turn clustering on
+        name = "Expression",
+        col = col_fun, #recolor
+        show_column_names = FALSE, #remove cell (column) labels
+        row_names_side = "left", #move gene (row) labels
+        top_annotation = hm_anno #add cluster annotation
+        )
+```
+
+### Practice heatmap
+
+* Create a heatmap of the top 20 marker genes in clusters. Which clusters better resolve with de novo clustering?
+* Create a heatmap of the top 3 marker genes in only clusters 0 and 1.
+
+# Alluvial plot
+
+We don't have an variables in these example data that lend themselves well to alluvial plotting. So, we will create a dummy T-cell receptor data set and use alluvial plots to compare V and J segment usage similar to Figure 2 in [this paper](https://www.nature.com/articles/s41467-020-17898-8/figures/2).
+
+Create the dummy data first. Be sure to set the same seed if you want your plot to look exactly the on in this tutorial.
+
+These are are simply the V and J name pairs for 100 "cells" from two individuals.
+
+```{r}
+set.seed(86)
+tcr <- data.frame(
+  Patient = c("pt01", "pt02"),
+  TRBV = paste0("TRBV", sample(1:3, 200, replace = TRUE)),
+  TRBJ = paste0("TRBJ", sample(1:3, 200, replace = TRUE))
+)
+
+head(tcr)
+```
+
+We then calculate how many time each VJ pair occurs in each patient. Note that `count( )` is a special function in the `tidyverse` which is shorthand for `mutate(n = n( ))`.
+
+```{r}
+tcr_summary <- tcr %>% 
+  group_by(Patient) %>% 
+  count(TRBV, TRBJ) %>% 
+  ungroup()
+
+tcr_summary
+```
+
+We make a default alluvial plot in ggplot with `ggalluvial`. We set the y variable to total counts (`n`) and define each x axis value in the order that we want. You can add more x groups beyond 3 as well.
+
+```{r}
+ggplot(tcr_summary) +
+  aes(y = n, axis1 = Patient, axis2 = TRBV, axis3 = TRBJ) +
+  geom_alluvium(aes(fill = Patient))
+```
+
+Then adding labels and further improving the plot. Since this is a random dummy data set, there are no trend to note.
+
+```{r}
+ggplot(tcr_summary) +
+  aes(y = n, axis1 = Patient, axis2 = TRBV, axis3 = TRBJ) +
+  geom_alluvium(aes(fill = Patient)) +
+  #Boxes around levels
+  geom_stratum(fill = NA) +
+  #Label levels
+  geom_text(aes(label = after_stat(stratum)),
+            stat = "stratum", size = 5) +
+  #Relabel x axis
+  scale_x_discrete(limits = c("Patient", "TRBV", "TRBJ")) +
+  #Format background and legend
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+You could also color by the V segment if that is what you want to highlight.
+
+```{r}
+ggplot(tcr_summary) +
+  aes(y = n, axis1 = Patient, axis2 = TRBV, axis3 = TRBJ) +
+  geom_alluvium(aes(fill = TRBV)) + #Change color variable
+  #Boxes around levels
+  geom_stratum(fill = NA) +
+  #Label levels
+  geom_text(aes(label = after_stat(stratum)),
+            stat = "stratum", size = 5) +
+  #Relabel x axis
+  scale_x_discrete(limits = c("Patient", "TRBV", "TRBJ")) +
+  #Format background and legend
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+Sometimes alluvial plots are shown as circles instead. While you can modify `ggalluvial` plots to circle form, it requires a lot of code. Instead, we will use `circlize` as it is specifically designed for these circular plots, called chord diagrams. 
+
+Like alluvial plots, chord diagrams can have any number of groups. First, we just show the VJ connections with patient information. The default colors are random so your plot may differ.
+
+```{r}
+tcr_summary %>%
+  select(-Patient) %>%
+  chordDiagram(.)
+```
+
+You can set the colors instead of them being random.
+
+```{r}
+chord_colors <- c("#CC79A7","#D55E00","#F0E442",
+                  "#0072B2","#009E73","#56B4E9")
+names(chord_colors) <- c("TRBV1", "TRBV2", "TRBV3",
+                         "TRBJ1", "TRBJ2", "TRBJ3")
+
+tcr_summary %>%
+  select(-Patient) %>%
+  chordDiagram(., grid.col = chord_colors)
+```
+
+Unlike the alluvial plot, adding patient as a group along the circle does not make sense as you'd then need to follow two different connections around. There is honestly not an easy way to add patient to the above plot. We recommend creating 1 plot per patient to do these comparisons like so.
+
+
+```{r}
+tcr_summary %>%
+  filter(Patient == "pt01") %>% 
+  select(-Patient) %>%
+  chordDiagram(., grid.col = chord_colors)
+title("Patient 01")
+
+tcr_summary %>%
+  filter(Patient == "pt02") %>% 
+  select(-Patient) %>%
+  chordDiagram(., grid.col = chord_colors)
+title("Patient 02")
+```
+
+You can see more ways to customize chord plots at <https://jokergoo.github.io/circlize_book/book>
+
+# Additional resources
+
+* [Seurat tutorials](https://satijalab.org/seurat/articles/get_started.html)
+* [Intro R workshop](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/1_introR.html)
+* [tidyverse workshop](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/2_tidyverse.html)
+* [ggplot workshop](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/3_ggplot.html)
+* [Heatmaps](https://jokergoo.github.io/ComplexHeatmap-reference/book)
+* [Alluvial plots](https://cran.r-project.org/web/packages/ggalluvial/vignettes/ggalluvial.html)
+* [Chord plots](https://jokergoo.github.io/circlize_book/book)
+
+# *Navigation*
+
+* [Workshop index][index]
+* [Lesson source code][lessonrmd]
+
+
+***
+
+[index]: https://bigslu.github.io/workshops/
+[lessonrmd]: https://bigslu.github.io/workshops/2023.02.07_scRNAseq.viz.workshop/scRNAseq.viz.Rmd
+[setup]: https://bigslu.github.io/workshops/setup/setup.html
+[seurat_tut]: https://satijalab.org/seurat/articles/pbmc3k_tutorial.html
+[lesson1]: https://bigslu.github.io/workshops/2023.02.07_scRNAseq.viz.workshop/scRNAseq.data.html
