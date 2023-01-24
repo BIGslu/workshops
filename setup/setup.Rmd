@@ -82,6 +82,20 @@ devtools::install_github("BIGslu/RNAetc")
 devtools::install_github("BIGslu/kimma")
 ```
 
+#### RNA-seq pathway analysis in R
+
+```{r eval=FALSE}
+#CRAN packages
+install.packages("tidyverse")
+#Bioconductor packages
+install.packages("BiocManager")
+BiocManager::install(c("edgeR", "biomaRt", "limma"))
+#GitHub packages
+install.packages("devtools")
+devtools::install_github("BIGslu/SEARchways")
+devtools::install_github("BIGslu/BIGpicture")
+```
+
 #### Plotting in ggplot
 
 ```{r eval=FALSE}
