@@ -461,7 +461,7 @@ Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
         )
 ```
 
-### Practice heatmap
+## Practice heatmap
 
 * Create a heatmap of the top 20 marker genes in clusters. Which clusters better resolve with de novo clustering?
 * Create a heatmap of the top 3 marker genes in only clusters 0 and 1.
