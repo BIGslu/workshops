@@ -1,0 +1,469 @@
+---
+title: "RNA-seq linear modeling"
+subtitle: "`limma` and `kimma`"
+author: "Kim Dill-McFarland, kadm@uw.edu"
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+---
+
+```{r include=FALSE}
+knitr::opts_chunk$set(fig.height=2.5, fig.width = 8.5)
+#set working dir to project
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+# RNA-seq linear modeling
+## Overview
+
+RNA-seq data sets have 1000s of genes, but we don't want to individually run 1000s of statistical models! In this section, we introduce some R packages designed for running linear models across all genes in an efficient manor.
+
+## Prior to the workshop
+
+Please follow the setup instructions at <https://bigslu.github.io/workshops/setup/setup.html> and install the packages under both of:
+
+* RNA-seq analysis in R
+* RNA-seq pathway analysis in R
+
+## Load packages
+
+Load the following packages. For more information on installation, see the [setup instructions][lesson0].
+
+```{r}
+#Data manipulation and plotting
+library(tidyverse)
+#Linear modeling
+library(kimma)
+library(limma)
+
+set.seed(651)
+```
+
+## Data
+### Data description
+
+Example data were obtained from virus-stimulated human plasmacytoid dendritic cells. Actual patient identifiers and metadata have been altered for this workshop.
+
+>Dill-McFarland KA, Schwartz JT, Zhao H, Shao B, Fulkerson PC, Altman MC, Gill MA. 2022. Eosinophil-mediated suppression and Anti-IL-5 enhancement of plasmacytoid dendritic cell interferon responses in asthma. J Allergy Clin Immunol. Epub ahead of print. doi: [10.1016/j.jaci.2022.03.025](https://doi.org/10.1016/j.jaci.2022.03.025). --- [GitHub](https://github.com/altman-lab/P259_pDC_public)
+
+Specifically, this workshop uses RNAseq data processed using our [SEAsnake][seasnake] and [counts to voom][pipeline2] pipelines, resulting in voom-normalized, log2 counts per million (CPM) expression and associated sample metadata in a `limma EList` object. A random subset of 1000 genes is used here to reduce computational time. These data are available in the `kimma` package within the `example.voom` data object.
+
+Our main research question is how human rhinovirus (HRV) infection impacts gene expression. As a secondary question, we are also interested in how individuals with asthma may respond differently to HRV compared to healthy individuals. Thus, we will explore models comparing media and HRV-infected samples (variable named `virus`) in asthmatic and healthy individuals (variable named `asthma`). We will then explore the impacts of patient co-variates, paired sample design, and random effects to improve model fit and the detection of differentially expressed genes.
+
+### Load data
+
+All counts, gene, and sample metadata are contained in a single object from the `kimma` package.
+
+```{r}
+dat<-example.voom
+```
+
+We access each data frame within this `Elist` using `$`. The normalized log2 CPM expression data are contained in `E`.
+
+```{r}
+dat$E[1:3,1:7]
+```
+
+Library and donor metadata are in `targets`.
+
+```{r}
+dat$targets[1:3,]
+```
+
+Gene metadata are in `genes`.
+
+```{r}
+dat$genes[1:3,1:4]
+```
+
+Voom gene-level quality weights are in `weights`. These were calculated with `voomWithQualityWeights( )`.
+
+```{r}
+example.voom$weights[1:3,1:3]
+```
+
+And finally, the null model used in voom normalization is found in `design`.
+
+```{r}
+example.voom$design[1:3,]
+```
+
+## Introduction to linear modeling
+
+This workshop assumes some familiarity with statistical modeling. You can find a quick intro relevant to RNA-seq data in our [Intro to linear modeling][lesson1].
+
+## Modeling in `limma`
+### Simple linear regression in `limma`
+
+`limma` take model inputs as a model matrix. This matrix encodes all the variables from the formula as 0 for N and 1 for Y. For example, here is the model matrix for the formula `~ virus + asthma`
+
+```{r}
+mm_limma <- model.matrix(~ virus + asthma, data=dat$targets)
+
+head(mm_limma)
+```
+
+> Be careful with variable order! Note that we only see one level for each variable: HRV for virus and asthma for asthma. This shows that the HRV samples are being compared to the reference level (which is `virus == "none"`). The reference is determined alphabetically if the variable is a character and by level if the variable is a factor. So, if you want a different order than alphabetical, you need to format your variables as factors and set the appropriate order. This was done for these data since "HRV" is before "none" alphabetically and similar for the asthma/healthy variable.
+
+Once we have a model matrix, we fit the model and estimate P-values.
+
+```{r}
+#Fit model
+fit_limma <- lmFit(object = dat$E, design = mm_limma,
+                   weights = dat$weights)
+#Estimate significance
+efit_limma <- eBayes(fit = fit_limma)
+```
+
+These outputs contain a lot of information. We can pull out the most commonly used pieces with `topTable`. By default, this gives your the 10 most significant genes across the entire model.
+
+```{r}
+#Extract results
+fdr_limma <- topTable(fit = efit_limma)
+head(fdr_limma)
+```
+
+With some additional parameters, we can get all gene results for each variable.
+
+```{r}
+fdr_limma_hrv <- topTable(fit = efit_limma, 
+                      coef = "virusHRV", number = Inf)
+fdr_limma_asthma <- topTable(fit = efit_limma, 
+                      coef = "asthmaasthma", number = Inf)
+
+head(fdr_limma_hrv)
+head(fdr_limma_asthma)
+```
+
+The variables included are:
+
+* `logFC`: log fold change. The sign is relative to your reference. For example, negative logFC for virusHRV means HRV minus media is negative and thus, expression is lower in HRV-infected samples.
+* `AveExpr`: average expression across all samples
+* `t`: test statistic for significance
+* `P.Value`
+* `adj.P.Val`: FDR adjusted P-value
+* `B`: beta coefficient
+
+With some `tidyverse` manipulation, we can get results for all genes and variables in one table. Or you can use the `kimma` function `extract_lmFit` and skip the coding! This also renames the columns to match `kimma`'s output.
+
+```{r}
+fdr_limma <- extract_lmFit(design = mm_limma, fit = efit_limma)
+
+names(fdr_limma)
+head(fdr_limma$lm)
+```
+
+### Paired sample design in `limma`
+
+`limma` uses a shortcut to model paired sample designs. Unlike a true mixed effect model, `limma` estimates the mean correlation of gene expression between pairs. This is an okay approximation of a mixed effects model and runs very fast.
+
+Using the same model as before, we can calculate the mean correlation.
+
+```{r}
+consensus.corr <- duplicateCorrelation(object = dat$E, 
+                                       design = mm_limma,
+                                       block = dat$targets$ptID)
+consensus.corr$consensus.correlation
+```
+
+Note: If you get an error about the package `statmod`, please install this package with `install.packages("statmod")`
+
+Then incorporate this estimate into our model fitting.
+
+```{r}
+# Fit model
+fit_limma2 <- lmFit(object = dat$E, design = mm_limma,
+                    weights = dat$weights,
+                    block = dat$targets$ptID,
+                    correlation = consensus.corr$consensus.correlation)
+#Estimate p-values
+efit_limma2 <- eBayes(fit_limma2)
+
+#Get results
+fdr_limma2 <- extract_lmFit(design = mm_limma, 
+                            fit = efit_limma2)
+```
+
+Comparing these results for the virus variable, we see that the pseudo-paired model with `duplicateCorrelation` tends to give lower FDR values. This doesn't necessarily mean the model is a better fit!
+
+```{r}
+#Format results for merging
+temp <- fdr_limma$lm %>% 
+  select(gene, variable, FDR) %>% 
+  filter(variable == "virusHRV") %>% 
+  rename(`limma` = FDR)
+
+temp2 <- fdr_limma2$lm %>% 
+  select(gene, variable, FDR) %>% 
+  filter(variable == "virusHRV") %>% 
+  rename(limma_dupCor = FDR)
+
+#Merge results and plot FDR
+full_join(temp, temp2) %>% 
+  ggplot(aes(x = `limma`, y = limma_dupCor)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  theme_classic() +
+  coord_fixed() +
+  labs(title = "FDR for HRV vs media")
+```
+
+`limma` provides one fit quality metric, sigma, which is the estimated standard deviation of the errors. Looking at this, we see that the best fit model (lowest sigma) varies from gene to gene. To be honest, however, sigma is not the best way to assess model fit. We'll next move into `kimma` where we can compare models with more fit metrics as well as run a true mixed effects model.
+
+```{r}
+data.frame(`limma` = fdr_limma$lm.fit$sigma,
+           limma_dupCor = fdr_limma2$lm.fit$sigma) %>% 
+  
+  ggplot(aes(x = `limma`, y = limma_dupCor)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  theme_classic() +
+  coord_fixed() +
+  labs(title = "Sigma")
+```
+
+## Modeling in `kimma`
+
+`kimma` supports more flexible modeling of RNA-seq data including simple linear and linear mixed effects models with co-variates, weights, random effects, and matrix random effects. Let's run the same models as we did with `limma`.
+
+Note that `kimma` is slower than `limma`. It can be run on multiple processors to increase speed.
+
+```{r}
+fit_kimma <- kmFit(dat = dat, 
+                   model = "~ virus + asthma + (1|ptID)", 
+                   use.weights = TRUE,
+                   run.lm = TRUE, run.lme = TRUE,
+                   metrics = TRUE)
+```
+
+The `kimma` output contains 4 data frames: one for each model's results (like `limma`'s `topTable`) and one for each model's fit metrics, which unlike `limma`, contain more than just sigma.
+
+```{r}
+names(fit_kimma)
+head(fit_kimma$lm)
+head(fit_kimma$lm.fit)
+```
+
+### Picking a best fit model
+
+We can now look at metrics like AIC where we see that best fit varies by gene (which is very common)...
+
+```{r}
+fit_kimma_all <- full_join(fit_kimma$lm.fit, 
+                           fit_kimma$lme.fit, 
+                           by = c("gene"), 
+                           suffix = c("_lm","_lme"))
+
+fit_kimma_all %>%
+  ggplot(aes(x = AIC_lm, y = AIC_lme)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  theme_classic() +
+  coord_fixed() +
+  labs(title = "AIC")
+```
+
+and the overall AIC mean and total are somewhat lower for the simple linear model without paired design.
+
+```{r}
+#Mean
+mean(fit_kimma$lm.fit$AIC)
+mean(fit_kimma$lme.fit$AIC)
+
+#Sum
+sum(fit_kimma$lm.fit$AIC)
+sum(fit_kimma$lme.fit$AIC)
+```
+
+In general, differences in mean AIC < 2 show that either model is appropriate, differences from 2 to 7 are moderate evidence for the lower value model, and differences greater than 7 are strong evidence for the lower value model.
+
+So in this case, which model do we go with? AIC supports the simple model but our study design is paired... Always use your scientific reasoning first! If you know that there is a study design feature or confounding covariate, keep them in the model even if the AIC says otherwise. Be smarter than your data!
+
+For this experiment, we know we have a paired design so either `limma` with `duplicateCorrelation` or `kimma` with `run.lme` is appropriate. In our experience, a true mixed effects model in `kimma` yields fewer false positive genes when you have a paired design, even if metrics like AIC do not support it as the best fit model.
+
+## Other models
+
+We don't have time to go over all the potential models of these data. So here's a quick reference for you to explore later on.
+
+* Interaction terms
+    - `limma` or `kimma` formula with `*` such as `~ virus * asthma` which is shorthand for `~ virus + asthma + virus:asthma`
+* Pairwise comparisons between 3+ levels
+    - `limma` `makeContrasts`
+    - `kimma` `run.contrasts = TRUE`
+* Matrix random effects
+    - `limma` not supported
+    - `kimma` provide the matrix `example.kin` from the `kimma` package and set `run.lmerel = TRUE`
+* Removing gene-level weights
+    - `limma` don't provide `weights`
+    - `kimma` `use.weights = FALSE`
+    - More about weights doi: [10.1186/gb-2014-15-2-r29](https://doi.org/10.1186/gb-2014-15-2-r29)
+* `dream` in the package `variancePartition`
+    - Another way to run paired sample designs
+    - See <https://www.bioconductor.org/packages/devel/bioc/vignettes/variancePartition/inst/doc/dream.html>
+
+# RNA-seq pathway analysis
+## Overview
+
+This section covers gene set related analyses of RNAseq data in the R package `SEARchways`. The goal is to determine pathways associated with genes impacted by viral infection from the previous linear models.
+
+## Load packages
+
+We will now load additional packages for pathway analyses.
+
+```{r}
+library(SEARchways)
+library(BIGpicture)
+```
+
+## DEG enrichment
+
+There are hundreds of genes significant for virus in this data set (FDR < 0.1). This is too many to assess individuals so we use enrichment to determine pathways associated with these genes.
+
+```{r}
+summarise_kmFit(fit_kimma$lme)
+```
+
+`SEARchways` has the function `BIGprofiler`, which employs `clusterProfiler` to run Fisher's exact tests of your genes of interest against any gene set data base available in the Broad Molecular Signatures Database ([MSigDB](https://www.gsea-msigdb.org/gsea/msigdb/collections.jsp)) or a custom one your provide. 
+
+Here, let's run the virus significant genes against the Hallmark data base.
+
+```{r}
+#Virus significant genes
+genes.virus <- fit_kimma$lme %>% 
+  filter(variable == "virus" & FDR < 0.1) %>% 
+  pull(gene)
+
+enrich.virus <- BIGprofiler(gene_list = list("virus" = genes.virus),
+                            ID = "ENSEMBL",
+                            category = "H")
+```
+
+The output includes:
+
+* `group`: Name identifier for genes of interest 
+* `size_group`: Total genes in each group
+* `gs_cat`: Gene set data base category
+* `gs_subcat`: Gene set data base subcategory
+* `size_cat.subcat`: Total genes in data base category/subcategory
+* `group_in_cat.subcat`: Total significant genes in data base category/subcategory e.g. how many of your genes of interest are present in the data base
+* `pathway`: Gene set name
+* `size_pathway`: Total genes in gene set (K)
+* `group_in_pathway`: Total significant genes in gene set (k)
+* `k/K`: group_in_pathway / size_pathway, a commonly used metric of enrichment
+* `pval`: P-value
+* `FDR`: FDR corrected P-value
+* `qvalue`: q-value
+* `genes`: List of significant genes in gene set (not shown below for length)
+
+The results show that there is 1 pathway enriched in virus significant genes at FDR < 0.05. 
+
+```{r}
+enrich.virus %>% 
+  filter(FDR < 0.05) %>% 
+  select(-genes)
+```
+
+We can easily plot this result in `BIGpicture`. We'll use FDR < 0.5 so you can see multiple pathways. You can see that roughly 6% of the IFN gamma response pathway is present in our list of virus significant genes.
+
+```{r}
+plot_enrich(enrich.virus, 
+            fdr.cutoff = 0.5, fdr.colors = c(0.05, 0.5))
+```
+
+#### What about directionality?
+
+This type of enrichment does not address whether genes are up or down-regulated, just that they are significant in some way. Thus, if you would like to know direction, you need to create subsets like `virus.up` and `virus.down`, then run enrichment on the lists separately. This should be done with caution as not all gene sets have concordant directionality and shorter gene lists are less likely to be significant in any pathway.
+
+#### A note on saving `SEARchways` results
+
+Many `SEARchways` results contain list data. For example, the `genes` column from all of the `BIG` functions is a list column. This means these data cannot be saved outside of R as they are.
+
+```{r}
+class(enrich.virus$genes)
+```
+
+To save this column outside R, simply convert it to a `character`.
+
+```{r eval=FALSE}
+enrich.virus %>% 
+  mutate(genes = as.character(genes)) %>% 
+  write_csv(file = "results/BIGprofiler.results.csv")
+```
+
+Note that if you read this csv back into R, the `genes` column will not be formatting correctly for downstream `BIGverse` functions. Thus, we recommend saving data in `.RData` or `.Rds` in order to maintain formatting.
+
+Alternatively, you can unnest the data to get 1 row per gene per pathway. Then when you read the `csv` into R, you can re-nest it like so.
+
+```{r eval=FALSE}
+enrich.virus %>% 
+  unnest(genes) %>% 
+  write_csv(file = "results/BIGprofiler.results.csv")
+
+enrich.virus <- read_csv("results/BIGprofiler.results.csv") %>% 
+  group_by(across(c(-genes))) %>% 
+  summarise(genes = list(genes), .groups = "drop")
+```
+
+## Gene set enrichment analysis (GSEA)
+
+Another gene set related analysis is GSEA. This method uses fold change values of *all* genes in the data set instead of having you pre-define a significant list of genes at an arbitrary FDR cutoff. GSEA, thus, can find significant pathways with no individually significant genes in them. Instead, smaller up (or down) regulations of many genes can drive overall significance of a pathway.
+
+`BIGsea` runs GSEA with parameters similar to `BIGprofiler` only now the input is log fold change (named `estimate` in the `kimma` output).
+
+```{r}
+FC.virus <- fit_kimma$lme %>% 
+  filter(variable == "virus") %>% 
+  select(variable, gene, estimate) 
+head(FC.virus)
+
+gsea.virus <- BIGsea(gene_df = FC.virus,
+                   ID = "ENSEMBL",
+                   category = "H")
+```
+
+Note the warning about ties in the data. This means that 2 or more genes have an identical log fold change value and thus, GSEA must randomly determine their rank order relative to each other. This is not an issue because we've already set a random seed for reproducibility. However, if there are a lot of ties in your data, like > 10%, this may indicate a need to re-assess your linear model to better represent differences across the data.
+
+Similarly, we can plot the GSEA results with `BIGpicture`. Unlike simple enrichment, GSEA shows directionality such as here where IFN gamma response is up-regulated in response to virus. Remember to define your variable order with `factor` in the original data if you want something other than alphabetical as this determines whether the fold change values are A minus B or B minus A.
+
+```{r}
+plot_gsea(gsea.virus,
+          fdr.cutoff = 0.5, fdr.colors = c(0.05, 0.5))
+```
+
+#### What if I have more than 2 groups to compare?
+
+GSEA can only support pairwise comparison. Thus, if you have a variable of interest with 3 or more levels, you need to run each pairwise comparison of interest separately. You can access this data in `kimma` with `run.contrasts = TRUE`. This is also true for interaction terms, where the model estimate is not a simple fold change.
+
+# *Navigation*
+
+* [Setup instructions][lesson0]
+* Previous lesson: [Intro to linear modeling][lesson1]
+
+# *Additional resources*
+
+* [More workshops][index]
+* [More tutorials][tut]
+* [limma manual, Chapter 15](http://bioconductor.org/packages/devel/bioc/vignettes/limma/inst/doc/usersguide.pdf)
+* [kimma vignette](https://bigslu.github.io/kimma_vignette/)
+
+***
+
+[index]: https://bigslu.github.io/workshops/
+[tut]: https://bigslu.github.io/tutorials/
+[lesson0]: https://bigslu.github.io/workshops/setup/setup.html
+[lesson1]: https://bigslu.github.io/workshops/2023.01.30_RNAseq.i4TB/1_linear_models.html
+[lesson2]: https://bigslu.github.io/workshops/2023.01.30_RNAseq.i4TB/2_linear_model_rnaseq.html
+[lesson3]: https://bigslu.github.io/workshops/2023.01.30_RNAseq.i4TB/3_pathways_rnaseq.html
+
+[seasnake]: https://bigslu.github.io/SEAsnake/vignette/SEAsnake_vignette.html
+[pipeline2]: https://bigslu.github.io/tutorials/RNAseq/2.RNAseq_counts.to.voom.html

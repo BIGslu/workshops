@@ -1,0 +1,351 @@
+---
+title: "Linear modeling"
+subtitle: "t-tests, linear models, linear mixed effect models"
+author: "Modified from Holly Hartman, PhD (Case Western)"
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+---
+
+```{r, include=FALSE}
+#set working dir to project
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+# Intro to linear modeling
+## Overview
+### Load packages
+
+Load the following packages. For more information on installation, see the [setup instructions][lesson0].
+
+```{r}
+#Data manipulation and plotting
+library(tidyverse)
+#Linear modeling
+library(lme4)
+#Get p-values with random effects model
+library(lmerTest)
+#Clean up model results
+library(broom)
+```
+
+### Load data
+
+For this section, we're just going to be focusing on one gene, IFNG. Create the data with the following.
+
+```{r}
+modelDat<-data.frame(
+  ptID = rep(paste0("pt", 1:10), 2),
+  E = c(-4.05,-0.84,-3.37,-1.00,-4.65,-3.62,-1.32,-2.55,0.29,-0.52,
+         0.57, 3.39, 0.52, 4.93,-2.01,-1.11, 1.48,-0.62,3.74, 4.30),
+  condition = c(rep("Media",10), rep("Mtb",10)),
+  sex = c("M","F")
+)
+```
+
+Awesome, we have our data! Let's get to the fun part - statistics!
+
+## Introduction to (statistical) sampling
+
+In research, we want to try to learn about a target population. However, we usually can't get data about the entire population, so we take a sample and get data about the sample. Then, using the data about the sample, we want to make inferences about the entire population. 
+
+For example, let's say we wanted to know if people who play video games more than 10 hours a week spend more or less money on electronics than those that play video games less than 10 hours a week. Since we can't ask everyone about their gaming and spending habits, we would ask a select few (a sample) about their gaming and spending habits. Then we would use statistics to determine the probability or likelihood that our population behaves a certain way based on that sample.  
+
+<img src="https://github.com/BIGslu/2022_ASM_Microbe_RNAseq/blob/main/4_linear_models/samplingEx.png?raw=true" width="600"/>
+
+## T-tests
+
+T-tests examine the means of two groups. To do a t-test you need to have a binary variable and a continuous variable. Then the test examines if the average of that continuous variable is the same for each binary variable. Using the example above, our binary variable would be if the person plays video games more or less than 10 hours a week and the continuous variable would be the amount spent on electronics. 
+
+In our data here, we will be looking at gene expression levels (continuous) and compare Media vs Mtb infection (binary). 
+
+
+In our data here, we will be looking at gene expression levels (continuous) and compare Media vs Mtb infection (binary). 
+
+Let's first look at the distribution of the data.
+```{r}
+p <- ggplot(modelDat, aes(x=condition, y=E)) + 
+  geom_boxplot() + 
+  geom_jitter(position=position_jitter(0.2)) +
+  ylab(expression(paste('Log'[2], " Expression")))
+p
+```
+
+`geom_boxplot` outputs the actual box plots and `geom_jitter` adds the actual data points but slightly scatters them so we can see them better. 
+
+We can see that the expression levels are lower in the media condition than in the Mtb condition. Now let's do a t-test to see if that difference is statistically significant.
+
+
+```{r}
+ttestRes<-t.test(E ~ condition, data = modelDat)
+ttestRes
+```
+
+The notation here is that the continuous variable goes before the `~`, then we have the binary variable, and then we specify where the data is found. 
+
+From the results we get the t-test statistic (t = `r tidy(ttestRes)$statistic`), the degrees of freedom (df = `r tidy(ttestRes)$parameter`), the p-value (p-value = `r tidy(ttestRes)$p.value`), as well as estimates of the mean for each group (Media = `r tidy(ttestRes)$estimate1`, Mtb = `r tidy(ttestRes)$estimate2`). 
+
+These results suggest that there is a statistically significant difference in gene expression for the gene IFNG between the Media and the Mtb infection conditions. (In statistics language: We reject the null hypothesis that the mean gene expression is equal in the Media and Mtb conditions)
+
+### T-test assumptions
+
+#### 1. Data is continuous
+
+Easy! Our data is a transformed measure of gene expression. Definitely continuous
+
+#### 2. Data is collected from a simple random sample
+
+This would be a question for the researchers that collected this sample. I think this would be fair to assume however. 
+
+#### 3. The data is normally distributed
+
+This is what we would check with our boxplot. We could also look at a violin plot. 
+
+```{r}
+p <- ggplot(modelDat, aes(x=condition, y=E)) + 
+  geom_violin() + 
+  geom_jitter(position=position_jitter(0.2)) +
+  ylab(expression(paste('Log'[2], " Expression")))
+p
+```
+
+We don't have a ton of data here so these plots look a little odd, but this could be useful if you have more data.
+
+There are also statistical tests you can do to test normality. One is the Kolmogorov-Smirnov test. This test is very sensitive to departures from normality. You can also test other distributions (F-distribution, etc). The other is the Shapiro-Wilks test for normality. This test only tests for normality. 
+
+```{r}
+ks.test(modelDat$E, "pnorm")
+shapiro.test(modelDat$E)
+```
+
+#### 4. The sample is "reasonably large"
+
+Well... Generally more data is better, but we only have what we have here.
+
+#### 5. Homogeneity of variance
+
+This means that the variance is the same in the Media condition and in the Mtb condition. We can test this with an F-test. 
+
+```{r}
+res <- var.test(E ~ condition, data = modelDat)
+res
+```
+
+### Paired t-test
+A paired t-test is very similar to a regular t-test, except here we are going to be incorporating the fact that each patient has a Media sample and a Mtb infection sample. That is, one person generated both pieces of data. 
+
+Another example of paired data might be pre/post tests where a person is given a test prior to some exposure and after some exposure to determine if the exposure caused a difference in test results. For example, we might give people a memory test, then have them do an obstacle course and get physically worn out, then have them do the memory test again to see if physical tiredness causes a change in memory abilities. 
+
+<img src="https://github.com/BIGslu/2022_ASM_Microbe_RNAseq/blob/main/4_linear_models/pairedDataEx.png?raw=true" width="600"/>
+
+Let's look at a spaghetti plot of our data. These are plots that connect lines between data that is generated by the same person. These plots can be useful for looking at paired data, longitudinal data, or other repeated measures.
+
+```{r}
+p <- modelDat %>%
+  ggplot(aes(x = condition, y = E, group = ptID)) +
+  geom_line() +
+  ylab(expression(paste('Log'[2], " Expression")))
+p
+```
+
+Nice! We can see that there's some correlation between the data. People with higher gene expression in the media tend to have higher gene expression in the Mtb condition.
+
+To do the paired t-test, we will first need to modify our data. 
+```{r}
+modelDatPair<-modelDat %>% 
+  pivot_wider(names_from = condition,
+              values_from = E)
+```
+
+Let's see what the resulting dataset looks like after that data manipulation. Is it what you expected?
+```{r}
+modelDatPair
+```
+
+So let's run the paired t-test with this data:
+
+```{r}
+ptTestRes<-t.test(modelDatPair$Mtb,
+                  modelDatPair$Media, 
+                  paired = TRUE)
+ptTestRes
+```
+
+Here, we see we get different results. We still get the t-score (`r tidy(ptTestRes)$statistic`), degrees of freedom (`r tidy(ptTestRes)$parameter`), and p-value (`r tidy(ptTestRes)$p.value`), but the values have slightly changed. This is because we're now testing if the difference between the matched pairs is 0. The estimate of the mean of the differences is `r tidy(ptTestRes)$estimate`, which is actually the same as the difference between the two means from before (Media = `r tidy(ttestRes)$estimate1`, Mtb = `r tidy(ttestRes)$estimate2`, difference = `r tidy(ttestRes)$estimate2 - tidy(ttestRes)$estimate1`). This answer is more accurate because know that the data came from the same person and not two independent samples. 
+
+## Linear models
+One major limitations of t-tests is that we can't adjust for any other information we know about the patients. You may a lot of other information in your dataset including sex, age, total sequences, etc. What if these variables also have an impact on gene expression in each of the conditions? The t-test wouldn't be able to tell us that. 
+
+This is when we would want to use a linear model! Let's start with a linear model not adjusting for other factors and see what we get. 
+
+```{r}
+lmMod<-lm(E ~ condition, data = modelDat)
+summary(lmMod)
+```
+
+Some of these numbers look awfully familiar. `r tidy(lmMod)$estimate[1]` is the mean gene expression for the Media condition, `r tidy(lmMod)$estimate[2]` is the difference between the means for the two conditions, and t = `r tidy(lmMod)$statistic[2]` is the same as for our unpaired t-test. The p-value of `r tidy(lmMod)$p.value[2]` slightly different because of how the degrees of freedom are calculated. 
+
+Now let's add another variable that may effect gene expression.
+```{r}
+lmModBig<-lm(E ~ condition + sex, data = modelDat)
+summary(lmModBig)
+```
+
+We see now that our numbers have changed and we have additional results! The main result of interest here is the p-value for the condition which is `r tidy(lmMod)$p.value[2]`. That means, adjusting for sex, the gene expression is statistically significantly different by condition (Media vs Mtb infection). 
+
+### Linear Modeling Assumptions
+
+#### 1. The true relationship is linear
+
+This makes more sense when we're modeling two continuous variables, but essentially we want to make sure that a **linear** model is the correct model to be using. To do that, we have to assume the relationship between the predictors and the outcome is linear. 
+
+#### 2. Errors are normally distributed
+
+#### 3. Homoscedasticity of errors (or, equal variance around the line).
+
+When we model, we can get a predicted value. We also have our observed values. The difference between the predicted values and the observed values are called the **errors** or **residuals**. We want those errors to be normally distributed. If there is some pattern in the error terms, this suggests that we might be missing some pattern and our model might be incorrect. We can make a few plots to look at our errors. 
+
+First we create a new data frame and then plot a scatter plot of our results. 
+```{r}
+#Create a new data frame using our results
+residDat<- data.frame(pred = lmModBig$fitted.values,
+                      resid = lmModBig$residuals)
+
+#Plot a scatterplot of our residuals vs our predicted values
+p<-residDat %>% ggplot(aes(x = pred, y = resid)) +
+  geom_point() +
+  xlab("Predicted value") +
+  ylab("Residual") 
+p
+```
+
+We see a gap in our predicted values. This is just because the condition makes a big difference in our predicted values. Otherwise it looks good.  
+
+Next, we'll plot a histogram of the residuals. We are going to use base R for this plot.  
+
+```{r}
+#Plot a histogram of our residuals.
+hist(residDat$resid, main="Histogram of Residuals",
+ ylab="Residuals")
+```
+
+Looks pretty good! We want our histogram to look like a bell curve.
+
+Lastly we'll plot a Q-Q plot. We want this to look like a straight line with no major trends or deviations. 
+
+```{r}
+#Q-Q Plot
+qqnorm(residDat$resid)
+qqline(residDat$resid)
+```
+
+These plots check both the normality and heteroskedacity of the error terms. If you just see randomness in the first plot, that's great! If you see a funnel pattern, that's a problem. In the Q-Q plot if you see a generally straight line with points randomly above or below the line, that's great! If you see curve (or a trend where most points are below the line, then above the line, then below the lineagain) that's a problem. 
+
+#### 4. Independence of the observations
+
+This means that each data point is independent of all others. The results of one observation do not influence another observation. Here, this would mean that none of the people in our sample are related. If there were relatives in our data, then we would expect them to have more similar results than two randomly selected people. 
+
+However, we actually break this assumption since we have paired data and linear models don't actually take that pairing into account. We'll talk more about that later. 
+
+### Goodness-of-Fit
+
+How do we know if we really need to adjust for sex? One way is to use the AIC (Akaike's An Information Criterion). This is a measure of "goodness of fit" or how well the model fits the data. AIC takes into account the number of variables included in the model and the maximum likelihood, which is a measure of how well the model predicts the data. Lower AIC indicates better goodness-of-fit. 
+
+```{r}
+AIC(lmMod)
+AIC(lmModBig)
+```
+
+We see that the AIC is lower for our smaller model. This means we might not actually be benefiting from adding those extra variables to our model. Always use your scientific reasoning though. If you know that there is a difference by other variables, keep them in the model even if the AIC says otherwise. Be smarter than your data!
+
+Another method to look at goodness-of-fit is BIC (Bayesian Information Criterion). This is similar to the AIC in that it takes into account the number of variables in the model and the maximum likelihood. Lower is also better for BIC. It is calculated slightly differently, however. BIC should not be compared to AIC. 
+
+```{r}
+BIC(lmMod)
+BIC(lmModBig)
+```
+
+This agrees with AIC that the simple model is a better fit. 
+
+## Linear mixed effects models
+The issue with the linear models is the same issue we had with a regular t-test. We're not using the fact that the one person generated two pieces of data! 
+
+To do that, we will use a mixed effects model. Mixed effects models are similar to linear models, except we have a "random effect" that accounts for individual differences between people. 
+
+```{r}
+lmeMod<-lmer(E ~ condition + (1 | ptID), data = modelDat)
+summary(lmeMod)
+```
+
+The notation here is similar to the model notation we've seen before, but we have a new term here. The `(1 | ptID)` is the **random effect**. This is telling the model what is the variable that connects the repeated measures. Here, we use the patient ID. Every row with the same patient ID value is data generated by the same person. This is how we can do a linear model while taking into account the fact that one person generated two pieces of data. 
+
+Next, let's add some other variables to our model!
+
+```{r}
+lmeModBig<-lmer(E ~ condition + sex + (1 | ptID), data = modelDat)
+summary(lmeModBig)
+```
+
+It looks like our effect estimate for condition didn't change all that much by adding sex. We might not need to incorporate those variables, but we'll look at that in the next section.
+
+### Goodness-of-Fit
+
+We can use the same tools to look at goodness-of-fit with our mixed effects model as we did for our linear model. 
+
+First, we'll look at AIC.
+
+```{r}
+AIC(lmeMod)
+AIC(lmeModBig)
+```
+
+In contrast to previous models, the larger model has a lower AIC and thus fits our data better. This supports including sex in our model, though the AIC difference is small enough (< 2) that either model is reasonable.
+
+Next, let's look at BIC.
+
+```{r}
+BIC(lmeMod)
+BIC(lmeModBig)
+```
+
+We see the same trend where the large model is a slightly better fit. 
+
+Now, let's do something a little funky. Let's see which fits our model better: our random effects model or our linear model.
+
+```{r}
+AIC(lmMod)
+AIC(lmeMod)
+```
+
+Looks like our mixed effects model is a better fit based on the smaller AIC! However, we also know that our data is paired so even if the AIC was higher for the mixed effects model, we should still incorporate the random effect. This is another case of using our scientific reasoning over the statistical tests. 
+
+## Wrap up
+
+In this section we covered t-tests, paired t-tests, linear models, and mixed effects models. That's a lot of content in a short amount of time! 
+
+If you hope to be doing more of these analyses, we highly recommend taking a formal statistics class. In such a class you will learn more about how to interpret model results (which we didn't even cover) and how to model different types of data.
+
+Perhaps an even better option is collaborating with a statistician or biostatistician. We are friendly folk and are passionate about helping scientists. We prefer to get involved in projects early on to help design your study to be the most efficient and useful. This helps us from being the bearers of bad news later on when we find out that your data won't answer your question. 
+
+# *Navigation*
+
+* [Workshop index][index]
+* [Setup instructions][lesson0]
+* Next lesson: [RNA-seq linear modeling][lesson2]
+
+***
+
+[index]: https://bigslu.github.io/workshops/
+[lesson0]: https://bigslu.github.io/workshops/setup/setup.html
+[lesson1]: https://bigslu.github.io/workshops/2023.01.30_RNAseq.i4TB/1_linear_models.html
+[lesson2]: https://bigslu.github.io/workshops/2023.01.30_RNAseq.i4TB/2_linear_model_rnaseq.html

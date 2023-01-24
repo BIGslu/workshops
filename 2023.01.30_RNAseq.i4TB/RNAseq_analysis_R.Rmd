@@ -1,0 +1,73 @@
+---  
+title: "RNA-seq analysis in R"
+author: |
+    | Kim Dill-McFarland, U of Washington
+    | Kelly Sovacool, U of Michigan
+    | Holly Hartman, Case Western
+    | Candace Williams, San Diego Zoo
+date: "version `r format(Sys.time(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+editor_options:
+  chunk_output_type: console
+urlcolor: blue
+---
+
+```{r, include=FALSE}
+#set working dir to project
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+# Setup and installation
+
+## Install R and RStudio
+
+* Install R, <https://cran.r-project.org/index.html>
+    - If you already have R installed, please upgrade to version 4.1 or newer
+* Install RStudio (free version), <https://www.rstudio.com/products/rstudio/download/>
+
+When you open RStudio, it should look like so with multiple panels. If you see only 1 panel, then you’re likely in R, not RStudio.
+
+![](https://github.com/BIGslu/2022_ASM_Microbe_RNAseq/blob/main/0_welcome/rstudio.png?raw=true)
+
+## Install R packages
+
+Install R packages by running the following script in your R console (left panel in the above image).
+
+```{r eval=FALSE}
+#CRAN packages
+install.packages(c("tidyverse", "lme4"))
+
+#Bioconductor packages
+install.packages("BiocManager")
+BiocManager::install(c("edgeR", "biomaRt", "limma"))
+
+#GitHub packages
+install.packages("devtools")
+devtools::install_github("BIGslu/RNAetc")
+devtools::install_github("BIGslu/kimma")
+```
+
+***
+
+```{r child = '1_introR/1_intro-R.Rmd'}
+```
+
+```{r child = '2_tidyverse/2_tidyverse.Rmd'}
+```
+
+```{r child = '3_RNAseq_cleaning/3_RNAseq_cleaning.Rmd'}
+```
+
+```{r child = '4_linear_models/4.1_linear models.Rmd'}
+```
+
+```{r child = '4_linear_models/4.2_linear_model_rnaseq.Rmd'}
+```
