@@ -1492,7 +1492,7 @@ font-size: 0.95em;
 
 <h1 class="title toc-ignore">Setup and installation</h1>
 <h4 class="author">Kim Dill-McFarland</h4>
-<h4 class="date">version January 12, 2023</h4>
+<h4 class="date">version January 20, 2023</h4>
 
 </div>
 
@@ -1552,7 +1552,7 @@ BiocManager::install(&quot;limma&quot;)</code></pre>
 <div id="rna-seq-analysis-in-r" class="section level4">
 <h4>RNA-seq analysis in R</h4>
 <pre class="r"><code>#CRAN packages
-install.packages(c(&quot;tidyverse&quot;, &quot;lme4&quot;, &quot;lmerTest&quot;))
+install.packages(&quot;tidyverse&quot;)
 #Bioconductor packages
 install.packages(&quot;BiocManager&quot;)
 BiocManager::install(c(&quot;edgeR&quot;, &quot;biomaRt&quot;, &quot;limma&quot;))
@@ -1560,6 +1560,18 @@ BiocManager::install(c(&quot;edgeR&quot;, &quot;biomaRt&quot;, &quot;limma&quot;
 install.packages(&quot;devtools&quot;)
 devtools::install_github(&quot;BIGslu/RNAetc&quot;)
 devtools::install_github(&quot;BIGslu/kimma&quot;)</code></pre>
+</div>
+<div id="rna-seq-pathway-analysis-in-r" class="section level4">
+<h4>RNA-seq pathway analysis in R</h4>
+<pre class="r"><code>#CRAN packages
+install.packages(&quot;tidyverse&quot;)
+#Bioconductor packages
+install.packages(&quot;BiocManager&quot;)
+BiocManager::install(c(&quot;edgeR&quot;, &quot;biomaRt&quot;, &quot;limma&quot;))
+#GitHub packages
+install.packages(&quot;devtools&quot;)
+devtools::install_github(&quot;BIGslu/SEARchways&quot;)
+devtools::install_github(&quot;BIGslu/BIGpicture&quot;)</code></pre>
 </div>
 <div id="plotting-in-ggplot" class="section level4">
 <h4>Plotting in ggplot</h4>
