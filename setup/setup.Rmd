@@ -72,7 +72,7 @@ BiocManager::install("limma")
 
 ```{r eval=FALSE}
 #CRAN packages
-install.packages(c("tidyverse", "lme4", "lmerTest"))
+install.packages("tidyverse")
 #Bioconductor packages
 install.packages("BiocManager")
 BiocManager::install(c("edgeR", "biomaRt", "limma"))
