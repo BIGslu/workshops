@@ -28,6 +28,10 @@ knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
 
 RNA-seq data sets have 1000s of genes, but we don't want to individually run 1000s of statistical models! In this section, we introduce some R packages designed for running linear models across all genes in an efficient manor.
 
+Recording available at <https://www.youtube.com/watch?v=UwtT6GQvJHc>
+
+Live notes at <https://github.com/BIGslu/workshops/blob/main/2023.01.30_RNAseq.i4TB/2023.01.30_i4TB.R>
+
 ## Prior to the workshop
 
 Please follow the setup instructions at <https://bigslu.github.io/workshops/setup/setup.html> and install the packages under both of:
