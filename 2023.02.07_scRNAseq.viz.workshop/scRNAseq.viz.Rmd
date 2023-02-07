@@ -75,7 +75,7 @@ load("pbmc_clean.RData")
 
 First let's explore the final data quality. While `Seurat` has a number of plotting functions, we will also build a plot from scratch so that you can further customize as needed.
 
-The percent mitochondrial data are contained in the data frame `pbmc[["percent.mt"]]`. See the [data cleaning notes][#lesson1] for how this metric was calculated.
+The percent mitochondrial data are contained in the data frame `pbmc[["percent.mt"]]`. See the [data cleaning notes][lesson1] for how this metric was calculated.
 
 ```{r}
 class(pbmc[["percent.mt"]])
@@ -106,24 +106,7 @@ ggplot(data = pbmc[["percent.mt"]]) +
   geom_jitter(height = 0, width = 0.2)
 ```
 
-#### About random seeds
-
-Your exact jitter plot will look different than mine. This is because this function uses a random seed to determine the x-axis values. You can force a reproducible plot by specifically setting the random seed.
-
-The most common seeds are 0, 1, 123, and 42. You can use any number and change it up between scripts if you'd like.
-
-```{r}
-set.seed(4389)
-ggplot(data = pbmc[["percent.mt"]]) +
-  aes(x = 1, y = percent.mt) +
-  geom_jitter(height = 0, width = 0.2)
-```
-
-#### An alternative to jitter
-
-Alternatively, you can improve readability by using a bee swarm. Checkout more in the [`ggbeeswarm` package](https://r-charts.com/distribution/ggbeeswarm/).
-
-Next, we add a violin by adding another layer. Here, we return to the jitter version as this is more similar to `Seurat` plots.
+Next, we add a violin by adding another layer.
 
 ```{r}
 ggplot(data = pbmc[["percent.mt"]]) +
@@ -132,7 +115,7 @@ ggplot(data = pbmc[["percent.mt"]]) +
   geom_violin()
 ```
 
-Oh no! Our violin trends covers up our points. This is because ggplot adds layers progressively. We easily fix this by calling the violin layer *before* the swarm layer.
+Oh no! Our violin trend covers up our points. This is because ggplot adds layers progressively. We easily fix this by calling the violin layer *before* the jitter layer.
 
 ```{r}
 ggplot(data = pbmc[["percent.mt"]]) +
@@ -141,7 +124,7 @@ ggplot(data = pbmc[["percent.mt"]]) +
   geom_jitter(height = 0, width = 0.4)
 ```
 
-Finally, let's customize the plot to look like the `Seurat` version. Checkout the other workshops at this end of this document to learn more about ggplot customization.
+Finally, let's customize the plot to look more like the `Seurat` version (though not exactly the same as some defaults in the original plot are unnecessary - like the legend). Checkout the other workshops at this end of this document to learn more about ggplot customization.
 
 ```{r}
 ggplot(data = pbmc[["percent.mt"]]) +
@@ -159,6 +142,23 @@ ggplot(data = pbmc[["percent.mt"]]) +
         axis.text.x = element_blank())
 ```
 
+#### About random seeds
+
+Your exact jitter plot will look different than mine. This is because this function uses a random seed to determine the x-axis values. You can force a reproducible plot by specifically setting the random seed.
+
+The most common seeds are 0, 1, 123, and 42. You can use any number and change it up between scripts if you'd like.
+
+```{r}
+set.seed(4389)
+ggplot(data = pbmc[["percent.mt"]]) +
+  aes(x = 1, y = percent.mt) +
+  geom_jitter(height = 0, width = 0.2)
+```
+
+#### An alternative to jitter
+
+Alternatively, you can improve readability by using a bee swarm. Checkout more in the [`ggbeeswarm` package](https://r-charts.com/distribution/ggbeeswarm/).
+
 ## Practice violin plot
 
 * Further customize the mitochondrial plot by adding a horizontal line showing the 5% cutoff used in data clean. *Hint*: checkout `geom_hline( )`
@@ -172,7 +172,7 @@ knitr::opts_chunk$set(fig.width = 5, fig.height = 4)
 
 Ordination simplifies the multi-dimensional gene expression data to a small number of latent variables that can be plotted on a simple XY plane. You may be familiar with principle component analysis (PCA) which is linear ordination. Single cell data performs better with non-linear ordinations like those described below.
 
-In our ordination plots, we will color cell clusters and differentially expressed genes determined in the [data cleaning notes][#lesson1].
+In our ordination plots, we will color cell clusters and differentially expressed genes determined in the [data cleaning notes][lesson1].
 
 ## UMAP
 
@@ -182,16 +182,6 @@ Let's make a UMAP before discussing more. First, calculate the UMAP for 10 axes 
 
 ```{r}
 pbmc <- RunUMAP(pbmc, dims = 1:10)
-```
-
-#### Error with UMAP
-
-Sometimes UMAP is not automatically installed with `Seurat`. If you get an error, try unloading the package, installing UMAP, and re-loading the package.
-
-```{r eval=FALSE}
-detach("package:Seurat", unload = TRUE)
-reticulate::py_install(packages = 'umap-learn')
-library(Seurat)
 ```
 
 `Seurat` can quickly plot the results with `DimPlot`.
@@ -238,6 +228,16 @@ ggplot(data = umap_xy_clusters) +
   theme_classic()
 ```
 
+#### Error with UMAP
+
+Sometimes UMAP is not automatically installed with `Seurat`. If you get an error, try unloading the package, installing UMAP, and re-loading the package.
+
+```{r eval=FALSE}
+detach("package:Seurat", unload = TRUE)
+reticulate::py_install(packages = 'umap-learn')
+library(Seurat)
+```
+
 ### Highlight specific genes
 
 We can plot gene expression per cell on the ordination. In `Seurat`, you list the gene(s) (i.e. features) and it does so with `FeaturePlot`
@@ -254,7 +254,8 @@ genes_of_interest <- c("LYZ", "MS4A1")
 
 #Extract normalized gene expression data
 pbmc_counts <- as.data.frame(GetAssayData(
-  object = pbmc, slot = "counts"))
+  object = pbmc, slot = "data"))
+
 #Filter for gene of interest
 umap_xy_expression <- pbmc_counts %>% 
   rownames_to_column("gene") %>% 
@@ -329,7 +330,7 @@ ggplot(data = tsne_xy_clusters) +
 
 You may wish to visualize expression of more genes than is reasonable to show in individual ordinations. Heatmaps are one option to show a lot of data in a small space.
 
-Here, we will plot the expression of the top 3 marker genes in clusters. Gene markers of clusters were determined in [data cleaning notes][#lesson1] and are contained in `pbmc_markers`
+Here, we will plot the expression of the top 3 marker genes in clusters. Gene markers were determined in [data cleaning notes][lesson1] and are contained in `pbmc_markers`
 
 ```{r}
 top3 <- pbmc_markers %>%
@@ -339,6 +340,7 @@ top3 <- pbmc_markers %>%
 head(top3)
 ```
 
+`Seurat` has `DoHeatmap` to plot these data. 
 ```{r}
 DoHeatmap(pbmc, features = top3$gene)
 ```
@@ -389,14 +391,14 @@ pbmc_counts_log_top3 <- pbmc_counts_log %>%
 
 Then create a default `ComplexHeatmap`. We turn off clustering to keep the order the same as the original matrix.
 
-```{r}
+```{r fig.width=6}
 Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
         cluster_rows = FALSE, cluster_columns = FALSE)
 ```
 
 Now, let's modify the heatmap to look more like `Seurat`.
 
-```{r}
+```{r fig.width=6}
 #Make color scale to span the data values
 #Force black center at 0.5 to match Seurat
 col_min <- min(pbmc_counts_log_top3, na.rm = TRUE)
@@ -432,11 +434,11 @@ Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
 
 ## Heatmap clustering
 
-The Seurat clustering above is aimed at grouping the cell clusters in numeric order. However, you can glean more information by with hierarchical clustering from the actual expression data. 
+The Seurat clustering above is aimed at grouping the cell clusters in numeric order. However, you may glean more information with hierarchical clustering from the actual expression data. 
 
 For example, if you cluster across all genes and within each cluster, we see that clusters 5 and 1 are very similar except in the gene FCGR3A.
 
-```{r}
+```{r fig.width=6}
 Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
         cluster_rows = TRUE, cluster_columns = TRUE, #Turn clustering on
         name = "Expression",
@@ -450,7 +452,7 @@ Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
 
 Or if we allow completely de novo clustering, we see that some cell clusters group well given only this gene set while others do not and likely require more marker genes to resolve.
 
-```{r}
+```{r fig.width=6}
 Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
         cluster_rows = TRUE, cluster_columns = TRUE, #Turn clustering on
         name = "Expression",
@@ -468,11 +470,11 @@ Heatmap(pbmc_counts_log_top3, use_raster = FALSE,
 
 # Alluvial plot
 
-We don't have an variables in these example data that lend themselves well to alluvial plotting. So, we will create a dummy T-cell receptor data set and use alluvial plots to compare V and J segment usage similar to Figure 2 in [this paper](https://www.nature.com/articles/s41467-020-17898-8/figures/2).
+We don't have any variables in these example data that lend themselves well to alluvial plotting. So, we will create a dummy T-cell receptor data set and use alluvial plots to compare V and J segment usage similar to Figure 2 in [this paper](https://www.nature.com/articles/s41467-020-17898-8/figures/2).
 
-Create the dummy data first. Be sure to set the same seed if you want your plot to look exactly the on in this tutorial.
+Create the dummy data first. Be sure to set the same seed if you want your plot to look exactly like the one in this tutorial.
 
-These are are simply the V and J name pairs for 100 "cells" from two individuals.
+These data are simply the V and J name pairs for 100 "cells" from two individuals.
 
 ```{r}
 set.seed(86)
@@ -485,7 +487,7 @@ tcr <- data.frame(
 head(tcr)
 ```
 
-We then calculate how many time each VJ pair occurs in each patient. Note that `count( )` is a special function in the `tidyverse` which is shorthand for `mutate(n = n( ))`.
+We then calculate how many times each VJ pair occurs in each patient. Note that `count( )` is a special function in the `tidyverse` which is shorthand for `mutate(n = n( ))`.
 
 ```{r}
 tcr_summary <- tcr %>% 
@@ -504,7 +506,7 @@ ggplot(tcr_summary) +
   geom_alluvium(aes(fill = Patient))
 ```
 
-Then adding labels and further improving the plot. Since this is a random dummy data set, there are no trend to note.
+Then adding labels and further improving the plot. Since this is a random dummy data set, there are no trends to note.
 
 ```{r}
 ggplot(tcr_summary) +
