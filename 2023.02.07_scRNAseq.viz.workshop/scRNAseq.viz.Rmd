@@ -20,7 +20,9 @@ knitr::opts_chunk$set(fig.width = 3, fig.height = 3)
 
 This workshop introduces popular data visualization methods for single cell RNA-seq data. Specifically, we will cover UMAP/tSNE and heatmaps.
 
-During the workshop, we will build an R script together, which will be posted as 'live_notes' after the workshop at <https://github.com/BIGslu/workshops/tree/main/2023.02.07_scRNAseq.viz.workshop>
+During the workshop, we will build an R script together, which is available at <https://github.com/BIGslu/workshops/blob/main/2023.02.07_scRNAseq.viz.workshop/2023.02.07_live.notes.R>
+
+The video recording is available at <https://youtu.be/x-BtCyLEH8c>
 
 # Prior to this workshop
 
@@ -598,7 +600,7 @@ You can see more ways to customize chord plots at <https://jokergoo.github.io/ci
 
 * [Workshop index][index]
 * [Lesson source code][lessonrmd]
-
+* [Exercise answer key](https://bigslu.github.io/workshops/2023.02.07_scRNAseq.viz.workshop/scRNAseq.exercise.key.html)
 
 ***
 
