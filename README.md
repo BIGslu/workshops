@@ -12,7 +12,7 @@
 * [Plotting in ggplot](https://bigslu.github.io/workshops/2022.01.18_ggplot.workshop/2022.01.18_ggplot_notes.html): 1-hour Introduction to plotting in ggplot. Includes boxplots, barplots, and "lollipop" plots. Moderate R experience recommended, in particular the tidyverse.
 * [Linear modeling in R](https://bigslu.github.io/workshops/2022.03.08_linear.model.workshop/2022.03.08_linear.model.notes.html): 1-hour Introduction to linear modeling in R. Includes t-test, anova, linear regression, and linear mixed effects regression. Minimal R experience, such as Intro R workshop, recommended.
 * [R packages](https://bigslu.github.io/workshops/2021.09_R.package.workshop/2021.09_R.package_notes.html): 1.5-hour Build an R package from scratch. Based on [Wickham H. R Packages. 2e](https://r-pkgs.org/index.html). Minimal R experience, such as Intro R workshop, recommended.
-* [Single cell RNA-seq visualization](https://bigslu.github.io/workshops/2023.02.07_scRNAseq.viz.workshop/scRNAseq.viz.html): 1-hour Introduction to Seurat data visualization including UMAP/tSNE and heatmaps. Minimal R experience, such as Intro R workshop, recommended.
+* [Single cell RNA-seq visualization](https://bigslu.github.io/workshops/2023.02.07_scRNAseq.viz.workshop/scRNAseq.viz.html): 1.5-hour Introduction to Seurat data visualization including UMAP/tSNE and heatmaps. Minimal R experience, such as Intro R workshop, recommended.
 
 ### Git
 
