@@ -140,6 +140,19 @@ install.packages("BiocManager")
 BiocManager::install("ComplexHeatmap")
 ```
 
+#### SEATRAC series
+
+```{r eval=FALSE}
+#CRAN packages
+install.packages(c("tidyverse"), Ncpus=4)
+#Bioconductor packages
+install.packages("BiocManager")
+BiocManager::install("limma")
+#GitHub packages
+install.packages("devtools")
+devtools::install_github("BIGslu/kimma")
+```
+
 ## Check R package install
 
 To make sure packages are correctly installed, load each of them individually into R with `library( )`. 
