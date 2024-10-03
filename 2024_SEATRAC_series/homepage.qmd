@@ -33,4 +33,4 @@ There is 1-1.5 hrs of content per workshop with remaining time dedicated to atte
 # Code
 
 * [Home page](https://bigslu.github.io/workshops/2024_SEATRAC_series/homepage.html)
-* [GitHub repo](https://bigslu.github.io/workshops/2024_SEATRAC_series)
+* [GitHub repo](https://github.com/BIGslu/workshops/tree/main/2024_SEATRAC_series)
