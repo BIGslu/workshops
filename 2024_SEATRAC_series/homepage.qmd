@@ -26,7 +26,7 @@ There is 1-1.5 hrs of content per workshop with remaining time dedicated to atte
 
 * 2024-10-8 [Intro to R](https://bigslu.github.io/workshops/introR.workshop/introR.html)
 * 2024-10-22 [Data cleaning with R tidyverse](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/2_tidyverse.html)
-* 2024-11-5 [RNAseq differential expression](https://bigslu.github.io/2022_ASM_Microbe_RNAseq/4_linear_models/4.2_linear_model_rnaseq.html)
+* 2024-11-5 [RNAseq differential expression](https://bigslu.github.io/workshops/2024_SEATRAC_series/3_linear_model_rnaseq.html)
 * 2024-11-19 [Data visualization with ggplot](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/3_ggplot.html)
 * 2024-12-10 SEATRAC Hack Day (link coming soon)
 
