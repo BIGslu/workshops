@@ -1,0 +1,339 @@
+---
+title: "RNA-seq linear modeling"
+subtitle: "`limma` and `kimma`"
+author: "Kim Dill-McFarland"
+date: today
+format:
+  html:
+    toc: true
+    self-contained: true
+    include-in-header:
+      - file: github-corner.html
+    code-link: true
+    theme: pulse
+  pdf:
+    toc: true
+editor_options:
+  chunk_output_type: console
+---
+```{r include=FALSE}
+knitr::opts_chunk$set(fig.height=2.5, fig.width = 8.5)
+#set working dir to project
+knitr::opts_knit$set(root.dir = rprojroot::find_rstudio_root_file())
+```
+
+# RNA-seq linear modeling
+## Overview
+
+Here, we introduce some R packages designed for running linear models across many 1000s of genes in an efficient manor.
+
+## Load packages
+
+Load the following packages. For more information on installation, see the [setup instructions][lesson0].
+
+```{r}
+#Data manipulation and plotting
+library(tidyverse)
+#Linear modeling
+library(kimma)
+library(limma)
+
+set.seed(651)
+```
+
+## Load data
+
+Data can be downloaded [here](https://github.com/BIGslu/workshops/raw/main/2022.08.15_R.tidyverse.workshop/data/data.zip)
+
+All counts, gene, and sample metadata are contained in a single object.
+
+```{r}
+#Load data
+load("data/dat_voom.RData")
+```
+
+`dat` object appears in our current R environment. 
+
+## Modeling in `limma`
+### Simple linear regression in `limma`
+
+`limma` take model inputs as a model matrix instead of the `~ variable` formula format you've seen with `lm` and `lmer`. This matrix encodes all the variables from the formula as 0 for N and 1 for Y. For example, here is the model matrix for the formula `~ condition + sex`
+
+```{r}
+mm_limma <- model.matrix(~ condition + sex, data=dat$targets)
+
+head(mm_limma)
+```
+
+Note that we only see one level for each variable: Mtb for condition and female for sex. This shows that the Mtb samples are being compared to the reference level (which is media). The reference is determined alphabetically if the variable is character and by level if the variable is a factor. So, if you want a different order than alphabetical, you need to format your variables as factors and set the appropriate order. For example, here we set the reference of sex to female instead of male.
+
+```{r}
+# Set order of sex variable as factors
+dat$targets <- dat$targets %>% 
+  mutate(sex = factor(sex, levels = c("M","F")))
+
+#Make model matrix
+mm_limma <- model.matrix(~ condition + sex, data=dat$targets)
+
+head(mm_limma)
+```
+
+Once we have a model matrix, we fit the model and estimate P-values.
+
+```{r}
+#Fit model
+fit_limma <- lmFit(object = dat$E, design = mm_limma,
+                   weights = dat$weights)
+#Estimate significance
+efit_limma <- eBayes(fit = fit_limma)
+```
+
+These outputs contain a lot of information. We can pull out the most commonly used pieces with `topTable`. By default, this gives your the 10 most significant genes across the entire model.
+
+```{r}
+#Extract results
+fdr_limma <- topTable(fit = efit_limma)
+```
+
+With some additional parameters, we can get all gene results for each variable.
+
+```{r}
+fdr_limma_mtb <- topTable(fit = efit_limma, 
+                      coef = "conditionMtb", number = Inf)
+fdr_limma_sex <- topTable(fit = efit_limma, 
+                      coef = "sexF", number = Inf)
+
+head(fdr_limma_mtb)
+head(fdr_limma_sex)
+```
+
+The variables included are:
+
+* logFC: log fold change. The sign is relative to your reference. For example, negative logFC for conditionMtb means Mtb minus media is negative and thus, expression is lower in Mtb-infected samples.
+* AveExpr: average expression across all samples
+* t: test statistic for significance
+* P.Value
+* adj.P.Val: FDR adjusted P-value
+* B: beta coefficient
+
+With some tidyverse manipulation, we can get results for all genes and variables in one table. Or you can use the `kimma` function `extract_lmFit` and skip the coding! This also renames the columns to match `kimma`'s output.
+
+```{r}
+fdr_limma <- extract_lmFit(design = mm_limma, fit = efit_limma)
+
+head(fdr_limma)
+```
+
+### Paired sample design in `limma`
+
+`limma` uses a shortcut to model paired sample designs. Unlike what you saw with `lmer` (which is a true mixed effect model), `limma` estimates the mean correlation of gene expression between pairs. This is an okay approximation of a mixed effects model and runs very fast.
+
+Using the same model as before, we can calculate the mean correlation.
+
+```{r}
+consensus.corr <- duplicateCorrelation(object = dat$E, 
+                                       design = mm_limma,
+                                       block = dat$targets$ptID)
+consensus.corr$consensus.correlation
+```
+
+Note: If you get an error about the package `statmod`, please install this package with `install.packages("statmod")`
+
+Then incorporate this estimate into our model fitting.
+
+```{r}
+# Fit model
+fit_limma2 <- lmFit(object = dat$E, design = mm_limma,
+                    weights = dat$weights,
+                    block = dat$targets$ptID,
+                    correlation = consensus.corr$consensus.correlation)
+#Estimate p-values
+efit_limma2 <- eBayes(fit_limma2)
+
+#Get results
+fdr_limma2 <- extract_lmFit(design = mm_limma, fit = efit_limma2)
+```
+
+Comparing these results for the condition variable, we see that the pseudo-paired model with duplicateCorrelation tends to give lower FDR values. This doesn't necessarily mean the model is a better fit!
+
+```{r}
+#Format results for merging
+temp <- fdr_limma$lm %>% 
+  select(gene, variable, FDR) %>% 
+  filter(variable == "conditionMtb") %>% 
+  rename(`limma` = FDR)
+
+temp2 <- fdr_limma2$lm %>% 
+  select(gene, variable, FDR) %>% 
+  filter(variable == "conditionMtb") %>% 
+  rename(limma_dupCor = FDR)
+
+#Merge results and plot FDR
+full_join(temp, temp2) %>% 
+  ggplot(aes(x = `limma`, y = limma_dupCor)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  theme_classic() +
+  coord_fixed() +
+  labs(title = "FDR for Mtb vs media")
+```
+
+`limma` provides one fit quality metric, sigma, which is the estimated standard deviation of the errors. Looking at this, we see that the best fit model (lowest sigma) varies from gene to gene. To be honest, however, sigma is not the best way to assess model fit. We'll next move into `kimma` where we can compare models with more fit metrics as well as run a true paired mixed effects model.
+
+```{r}
+data.frame(`limma` = efit_limma$sigma,
+           limma_dupCor = efit_limma2$sigma) %>% 
+  
+  ggplot(aes(x = `limma`, y = limma_dupCor)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  theme_classic() +
+  coord_fixed() +
+  labs(title = "Sigma")
+```
+
+## Modeling in `kimma`
+
+`kimma` supports more flexible modeling of RNA-seq data including simple linear and linear mixed effects models with co-variates, weights, random effects, and matrix random effects. Let's run the same models as we did with `limma`.
+
+Note that `kimma` is much slower than `limma`. It can be run on multiple processors to increase speed but if you don't have a very powerful laptop, DO NOT RUN the next section of code.
+
+```{r eval=FALSE}
+fit_kimma <- kmFit(dat = dat, 
+                   model = "~ condition + sex + (1|ptID)", 
+                   use_weights = TRUE,
+                   run_lm = TRUE, run_lme = TRUE,
+                   metrics = TRUE)
+
+save(fit_kimma, file="data/kimma_result.RData")
+```
+
+```
+lm model: expression~condition+sex
+lme/lmerel model: expression~condition+sex+(1|ptID)
+Input: 20 libraries from 10 unique patients
+Model: 20 libraries
+Complete: 13419 genes
+Failed: 0 genes
+```
+
+In the interest of time, we've provided the `kimma` results for you.
+
+```{r}
+load("data/kimma_result.RData")
+```
+
+The `kimma` output contains 4 data frames: one that matches the `limma` output and one with fit metrics for each model.
+
+```{r}
+names(fit_kimma)
+head(fit_kimma$lm)
+head(fit_kimma$lm.fit)
+```
+
+We can now look at metrics like AIC where we see that best fit still varies by gene (which is very common) and the overall AIC mean is lower for the simple linear model without paired design.
+
+```{r}
+fit_kimma_all <- full_join(fit_kimma$lm.fit, fit_kimma$lme.fit, 
+          by = c("gene"), suffix = c("_lm","_lme"))
+
+fit_kimma_all %>%
+  ggplot(aes(x = AIC_lm, y = AIC_lme)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  theme_classic() +
+  coord_fixed() +
+  labs(title = "AIC")
+
+mean(fit_kimma$lm.fit$AIC)
+mean(fit_kimma$lme.fit$AIC)
+```
+
+So in this case, which model do we go with? It would be nice if one model showed consistently better fit across our genes, but this rarely happens. For this experiment, we know we have a paired design so either `limma` with `duplicateCorrelation` or `kimma` with `run.lme` is appropriate. In our experience, a true mixed effects model in `kimma` yields fewer false positive genes when you have a paired design, even if metrics like AIC do not support it as the best fit model.
+
+## Other models
+
+We don't have time to go over all the potential models of these data. So here's a quick reference for you to explore later on.
+
+* Interaction terms
+    - `limma` or `kimma` formula with `*` such as `~ condition * sex` which is shorthand for `~ condition + sex + condition:sex`
+* Pairwise comparisons between 3+ levels
+    - `limma` `makeContrasts`
+    - `kimma` `run.contrasts = TRUE`
+* Matrix random effects
+    - `limma` not supported
+    - `kimma` provide the matrix `kin` and set `run.lmerel = TRUE`
+* Removing gene-level weights
+    - `limma` don't provide `weights`
+    - `kimma` `use.weights = FALSE`
+    - More about weights doi: [10.1186/gb-2014-15-2-r29](https://doi.org/10.1186/gb-2014-15-2-r29)
+* `dream` in the package `variancePartition`
+    - Another way to run paired sample designs
+    - See <https://www.bioconductor.org/packages/devel/bioc/vignettes/variancePartition/inst/doc/dream.html>
+
+For more help with `limma`, see Chapter 15 <http://bioconductor.org/packages/devel/bioc/vignettes/limma/inst/doc/usersguide.pdf>
+
+For `kimma`, see <https://github.com/BIGslu/tutorials/blob/main/RNAseq/3.Hawn_RNAseq_voom.to.DEG.pdf>
+
+## Useful kimma plots
+
+If you use `kimma`, our other package `BIGpicture` has several plotting functions you may find useful. Here are some examples.
+
+```{r eval=FALSE}
+devtools::install_github("BIGslu/BIGpicture")
+```
+
+```{r}
+library(BIGpicture)
+```
+
+Principle component analysis (PCA)
+
+```{r}
+plot_pca(dat, vars = c("condition", "outlier"))
+```
+
+Model fit metrics
+
+```{r fig.height=4}
+plot_fit(model_result = fit_kimma, 
+         x="lm", y="lme", metrics = c("AIC","adj_Rsq"))
+plot_fit2(model_result = fit_kimma, 
+         x="lm", y="lme", metrics = c("AIC","adj_Rsq"))
+```
+
+Significant gene Venn
+
+```{r}
+plot_venn_genes(list("lme"=fit_kimma$lme), fdr.cutoff = 0.05)
+```
+
+Gene expression boxplots
+
+```{r fig.height=4}
+plot_genes(dat, fdr = fit_kimma$lme, geneID = "hgnc_symbol",
+           subset.genes = "IFNG", variables = c("condition","sex"))
+```
+
+STRING protein-protein interaction network
+
+```{r message=FALSE, fig.height=4}
+#list top 20 most significant genes
+genes.signif <- fit_kimma$lme %>% 
+  filter(variable == "condition") %>% 
+  slice_min(order_by = FDR, n = 20) %>% 
+  pull(gene)
+
+#map genes to STRING database
+map <- map_string(genes.signif)
+#make plot
+plot_string(map)
+```
+
+# *Navigation*
+
+* [Workshop index][index]
+
+***
+
+[index]: https://bigslu.github.io/workshops/2024_SEATRAC_series/homepage.html
