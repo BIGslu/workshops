@@ -28,7 +28,7 @@ There is 1-1.5 hrs of content per workshop with remaining time dedicated to atte
 * 2024-10-22 [Data cleaning with R tidyverse](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/2_tidyverse.html)
 * 2024-11-5 [RNAseq differential expression](https://bigslu.github.io/workshops/2024_SEATRAC_series/3_linear_model_rnaseq.html)
 * 2024-11-19 [Data visualization with ggplot](https://bigslu.github.io/workshops/2022.08.15_R.tidyverse.workshop/3_ggplot.html)
-* 2024-12-10 SEATRAC Hack Day (link coming soon)
+* 2024-12-10 [SEATRAC Hack Day](https://github.com/FredHutch/seatrac-hackday-2024)
 
 # Code
 
